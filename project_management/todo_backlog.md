@@ -3,20 +3,20 @@
 This comprehensive backlog contains all planned tasks derived from user stories, architecture, and development plan. Tasks are organized by sprint phases with granular, actionable items. Check off completed tasks as work progresses.
 
 ## Project Setup
-- [ ] Create basic HTML structure (index.html)
-- [ ] Set up basic CSS file (style.css) with minimal styling
-- [ ] Create main JavaScript file (app.js) with basic structure
-- [ ] Set up project folder structure as outlined in architecture.md
-- [ ] Initialize Git repository
-- [ ] Create initial commit with project skeleton
+- [x] Create basic HTML structure (index.html)
+- [x] Set up basic CSS file (style.css) with minimal styling
+- [x] Create main JavaScript file (app.js) with basic structure
+- [x] Set up project folder structure as outlined in architecture.md
+- [x] Initialize Git repository
+- [x] Create initial commit with project skeleton
 
 ## Sprint 1: Data Foundation with Sheets Integration
 ### Google OAuth Setup
-- [ ] Research and select appropriate Google OAuth flow for client-side app
-- [ ] Create Google Cloud Console project and enable Sheets API
-- [ ] Configure OAuth consent screen with appropriate scopes
-- [ ] Implement OAuth authentication function in auth.js
-- [ ] Add token storage and refresh logic in IndexedDB
+- [x] Research and select appropriate Google OAuth flow for client-side app
+- [x] Create Google Cloud Console project and enable Sheets API
+- [x] Configure OAuth consent screen with appropriate scopes
+- [x] Implement OAuth authentication function in auth.js
+- [x] Add token storage and refresh logic in IndexedDB
 - [ ] Create authentication UI elements (login button, status display)
 
 ### IndexedDB Setup
