@@ -259,7 +259,70 @@ const app = {
         }
     },
 
+    // View management
+    currentView: 'landing',
+
+    switchView: function(viewName) {
+        // Hide all views
+        const views = document.querySelectorAll('.view');
+        views.forEach(view => {
+            view.classList.remove('active');
+            view.style.display = 'none';
+        });
+
+        // Remove active class from nav buttons
+        const navBtns = document.querySelectorAll('.nav-btn');
+        navBtns.forEach(btn => btn.classList.remove('active'));
+
+        // Show selected view
+        const targetView = document.getElementById(viewName + '-view');
+        if (targetView) {
+            targetView.classList.add('active');
+            targetView.style.display = 'block';
+        }
+
+        // Activate nav button
+        const targetNav = document.getElementById('nav-' + viewName);
+        if (targetNav) {
+            targetNav.classList.add('active');
+        }
+
+        this.currentView = viewName;
+
+        // Update page title for accessibility
+        const titles = {
+            landing: 'Shelf Showdown - Home',
+            books: 'Shelf Showdown - Your Books',
+            compare: 'Shelf Showdown - Compare Books',
+            results: 'Shelf Showdown - Rankings'
+        };
+        document.title = titles[viewName] || 'Shelf Showdown';
+
+        // Load data for the view
+        this.loadViewData(viewName);
+    },
+
+    loadViewData: function(viewName) {
+        switch (viewName) {
+            case 'books':
+                this.loadBooks();
+                break;
+            case 'compare':
+                this.loadComparisonView();
+                break;
+            case 'results':
+                this.loadResultsView();
+                break;
+        }
+    },
+
     setupEventListeners: function() {
+        // Navigation event listeners
+        document.getElementById('nav-landing').addEventListener('click', () => this.switchView('landing'));
+        document.getElementById('nav-books').addEventListener('click', () => this.switchView('books'));
+        document.getElementById('nav-compare').addEventListener('click', () => this.switchView('compare'));
+        document.getElementById('nav-results').addEventListener('click', () => this.switchView('results'));
+
         document.getElementById('login-btn').addEventListener('click', async () => {
             if (!navigator.onLine) {
                 alert('Cannot authenticate while offline. Please check your internet connection.');
@@ -1182,6 +1245,316 @@ Message: ${results.message || 'Force sync completed successfully'}
             document.getElementById('debug-status').textContent = '';
             document.getElementById('debug-output').textContent = '';
         });
+
+        // Books view event listeners
+        document.getElementById('add-book-btn').addEventListener('click', () => this.showAddBookForm());
+        document.getElementById('refresh-books-btn').addEventListener('click', () => this.loadBooks());
+        document.getElementById('cancel-add-book').addEventListener('click', () => this.hideAddBookForm());
+        document.getElementById('book-form').addEventListener('submit', (e) => this.handleAddBook(e));
+
+        // Comparison view event listeners
+        document.getElementById('choose-a-btn').addEventListener('click', () => this.handleComparisonChoice('A'));
+        document.getElementById('choose-b-btn').addEventListener('click', () => this.handleComparisonChoice('B'));
+        document.getElementById('skip-comparison-btn').addEventListener('click', () => this.showNextComparison());
+
+        // Results view event listeners
+        document.getElementById('calculate-ranking-btn').addEventListener('click', () => this.loadResultsView());
+        document.getElementById('export-ranking-btn').addEventListener('click', () => this.exportRanking());
+        document.getElementById('sort-options').addEventListener('change', (e) => this.sortRankings(e.target.value));
+    },
+
+    // Books management
+    loadBooks: async function() {
+        try {
+            const books = await getAllBooks();
+            this.renderBooksList(books);
+        } catch (error) {
+            console.error('Error loading books:', error);
+            alert('Error loading books: ' + error.message);
+        }
+    },
+
+    renderBooksList: function(books) {
+        const booksList = document.getElementById('books-list');
+        booksList.innerHTML = '';
+
+        if (books.length === 0) {
+            booksList.innerHTML = '<p>No books found. Add some books to get started!</p>';
+            return;
+        }
+
+        books.forEach(book => {
+            const bookItem = this.createBookItem(book);
+            booksList.appendChild(bookItem);
+        });
+    },
+
+    createBookItem: function(book) {
+        const item = document.createElement('div');
+        item.className = 'book-card';
+        item.setAttribute('role', 'listitem');
+
+        const rating = book.rating ? book.rating.toFixed(1) : 'Unrated';
+        const reads = book.datesRead ? book.datesRead.length : 0;
+
+        item.innerHTML = `
+            <h3>${this.escapeHtml(book.title)}</h3>
+            <p><strong>Author:</strong> ${this.escapeHtml(book.author)}</p>
+            ${book.genre ? `<p><strong>Genre:</strong> ${this.escapeHtml(book.genre)}</p>` : ''}
+            <p><strong>Rating:</strong> ${rating}</p>
+            <p><strong>Times Read:</strong> ${reads}</p>
+            <div style="margin-top: 10px;">
+                <button class="neumorphic-btn edit-book-btn" data-book-id="${book.id}" aria-label="Edit ${book.title}">Edit</button>
+                <button class="neumorphic-btn delete-book-btn" data-book-id="${book.id}" aria-label="Delete ${book.title}">Delete</button>
+            </div>
+        `;
+
+        // Add event listeners for edit and delete
+        const editBtn = item.querySelector('.edit-book-btn');
+        const deleteBtn = item.querySelector('.delete-book-btn');
+
+        editBtn.addEventListener('click', () => this.editBook(book.id));
+        deleteBtn.addEventListener('click', () => this.deleteBook(book.id));
+
+        return item;
+    },
+
+    showAddBookForm: function() {
+        const form = document.getElementById('add-book-form');
+        form.style.display = 'block';
+        document.getElementById('book-title').focus();
+    },
+
+    hideAddBookForm: function() {
+        const form = document.getElementById('add-book-form');
+        form.style.display = 'none';
+        document.getElementById('book-form').reset();
+    },
+
+    handleAddBook: async function(e) {
+        e.preventDefault();
+
+        const title = document.getElementById('book-title').value.trim();
+        const author = document.getElementById('book-author').value.trim();
+        const genre = document.getElementById('book-genre').value.trim();
+
+        if (!title || !author) {
+            alert('Title and author are required');
+            return;
+        }
+
+        try {
+            const newBook = {
+                title,
+                author,
+                genre: genre || null,
+                datesRead: [],
+                rating: null
+            };
+
+            // Import to DB (this will handle ID generation and syncing)
+            const importResults = await importBooksToDB([newBook]);
+
+            if (importResults.errors > 0) {
+                throw new Error('Failed to add book');
+            }
+
+            this.hideAddBookForm();
+            this.loadBooks(); // Refresh the list
+
+            alert('Book added successfully!');
+        } catch (error) {
+            console.error('Error adding book:', error);
+            alert('Error adding book: ' + error.message);
+        }
+    },
+
+    editBook: function(bookId) {
+        // TODO: Implement edit functionality
+        alert('Edit functionality coming soon!');
+    },
+
+    deleteBook: async function(bookId) {
+        if (!confirm('Are you sure you want to delete this book?')) {
+            return;
+        }
+
+        try {
+            await deleteBook(bookId);
+            this.loadBooks(); // Refresh the list
+            alert('Book deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting book:', error);
+            alert('Error deleting book: ' + error.message);
+        }
+    },
+
+    escapeHtml: function(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    // Comparison view
+    loadComparisonView: async function() {
+        try {
+            const books = await getAllBooks();
+            if (books.length < 2) {
+                document.getElementById('comparison-container').innerHTML = '<p>You need at least 2 books to start comparing. Add more books first!</p>';
+                return;
+            }
+
+            this.comparisonBooks = books;
+            this.currentComparison = null;
+            this.updateComparisonProgress();
+            this.showNextComparison();
+        } catch (error) {
+            console.error('Error loading comparison view:', error);
+            alert('Error loading comparison view: ' + error.message);
+        }
+    },
+
+    showNextComparison: function() {
+        // Simple random pair selection for now
+        const availableBooks = this.comparisonBooks.filter(book => book.rating !== undefined && book.rating !== null);
+
+        if (availableBooks.length < 2) {
+            // If not enough rated books, pick any two
+            const bookA = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
+            let bookB = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
+            while (bookB.id === bookA.id) {
+                bookB = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
+            }
+            this.displayComparison(bookA, bookB);
+        } else {
+            // Pick from rated books
+            const bookA = availableBooks[Math.floor(Math.random() * availableBooks.length)];
+            let bookB = availableBooks[Math.floor(Math.random() * availableBooks.length)];
+            while (bookB.id === bookA.id) {
+                bookB = availableBooks[Math.floor(Math.random() * availableBooks.length)];
+            }
+            this.displayComparison(bookA, bookB);
+        }
+    },
+
+    displayComparison: function(bookA, bookB) {
+        this.currentComparison = { bookA, bookB };
+
+        const bookAEl = document.getElementById('book-a');
+        const bookBEl = document.getElementById('book-b');
+
+        bookAEl.innerHTML = `
+            <h3>${this.escapeHtml(bookA.title)}</h3>
+            <p>by ${this.escapeHtml(bookA.author)}</p>
+            ${bookA.rating ? `<p>Rating: ${bookA.rating.toFixed(1)}</p>` : '<p>Unrated</p>'}
+        `;
+
+        bookBEl.innerHTML = `
+            <h3>${this.escapeHtml(bookB.title)}</h3>
+            <p>by ${this.escapeHtml(bookB.author)}</p>
+            ${bookB.rating ? `<p>Rating: ${bookB.rating.toFixed(1)}</p>` : '<p>Unrated</p>'}
+        `;
+    },
+
+    updateComparisonProgress: function() {
+        // Simple progress calculation
+        const totalComparisons = 10; // Placeholder
+        const completedComparisons = 5; // Placeholder
+        const progressPercent = (completedComparisons / totalComparisons) * 100;
+
+        document.getElementById('progress-text').textContent = `Comparisons completed: ${completedComparisons}/${totalComparisons}`;
+        document.getElementById('progress-bar').style.setProperty('--progress', progressPercent + '%');
+    },
+
+    // Results view
+    loadResultsView: async function() {
+        try {
+            // Calculate ranking
+            const ranking = await updateCurrentRanking({ source: 'ui' });
+            this.displayRanking(ranking);
+            this.displayStats(ranking);
+        } catch (error) {
+            console.error('Error loading results view:', error);
+            alert('Error loading results: ' + error.message);
+        }
+    },
+
+    displayRanking: function(ranking) {
+        const rankingsList = document.getElementById('rankings-list');
+        rankingsList.innerHTML = '';
+
+        if (!ranking || !ranking.rankedBooks || ranking.rankedBooks.length === 0) {
+            rankingsList.innerHTML = '<p>No rankings available. Make some comparisons first!</p>';
+            return;
+        }
+
+        ranking.rankedBooks.forEach((book, index) => {
+            const item = document.createElement('div');
+            item.className = 'ranking-item';
+            item.setAttribute('role', 'listitem');
+            item.innerHTML = `
+                <span class="rank-number">${index + 1}.</span>
+                <span class="book-title">${this.escapeHtml(book.title)}</span>
+                <span class="book-author">by ${this.escapeHtml(book.author)}</span>
+                <span class="book-rating">Rating: ${book.rating ? book.rating.toFixed(1) : 'Unrated'}</span>
+            `;
+            rankingsList.appendChild(item);
+        });
+    },
+
+    displayStats: function(ranking) {
+        const statsContent = document.getElementById('stats-content');
+        if (!ranking) {
+            statsContent.innerHTML = '<p>No statistics available.</p>';
+            return;
+        }
+
+        const stats = ranking.getStats();
+        statsContent.innerHTML = `
+            <div class="stat-item">
+                <strong>Total Books:</strong> ${stats.totalBooks}
+            </div>
+            <div class="stat-item">
+                <strong>Rating Range:</strong> ${stats.lowestRating.toFixed(1)} - ${stats.highestRating.toFixed(1)}
+            </div>
+            <div class="stat-item">
+                <strong>Average Rating:</strong> ${stats.averageRating.toFixed(1)}
+            </div>
+        `;
+    },
+
+    handleComparisonChoice: async function(choice) {
+        if (!this.currentComparison) return;
+
+        const winner = choice === 'A' ? this.currentComparison.bookA : this.currentComparison.bookB;
+        const loser = choice === 'A' ? this.currentComparison.bookB : this.currentComparison.bookA;
+
+        try {
+            // Create and store comparison
+            const comparison = new Comparison(this.currentComparison.bookA.id, this.currentComparison.bookB.id, winner.id);
+            await storeComparison(comparison);
+
+            // Process comparisons to update ratings
+            await processAllComparisons();
+
+            // Update progress and show next comparison
+            this.updateComparisonProgress();
+            this.showNextComparison();
+
+        } catch (error) {
+            console.error('Error processing comparison:', error);
+            alert('Error processing comparison: ' + error.message);
+        }
+    },
+
+    exportRanking: function() {
+        // TODO: Implement export functionality
+        alert('Export functionality coming soon!');
+    },
+
+    sortRankings: function(sortBy) {
+        // TODO: Implement sorting
+        alert('Sorting functionality coming soon!');
     }
 };
 

@@ -3,19 +3,354 @@
     box-sizing: border-box;
 }
 
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Roboto', Arial, sans-serif;
     margin: 0;
-    padding: 20px;
-    background-color: #f0f0f0;
-    color: #333;
+    padding: 0;
+    background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+    color: #424242;
+    min-height: 100vh;
 }
 
 #app {
+    min-height: 100vh;
+    background: #e6e6e6;
+    padding: 20px;
     max-width: 1200px;
     margin: 0 auto;
+}
+
+/* Navigation */
+#main-nav {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+}
+
+.nav-btn {
+    background: #e6e6e6;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #424242;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow:
+        8px 8px 16px #bebebe,
+        -8px -8px 16px #ffffff;
+    position: relative;
+    outline: none;
+}
+
+.nav-btn:hover {
+    box-shadow:
+        6px 6px 12px #bebebe,
+        -6px -6px 12px #ffffff;
+}
+
+.nav-btn.active {
+    box-shadow:
+        inset 6px 6px 12px #bebebe,
+        inset -6px -6px 12px #ffffff;
+    color: #1976d2;
+}
+
+.nav-btn:focus {
+    box-shadow:
+        0 0 0 3px rgba(25, 118, 210, 0.3),
+        8px 8px 16px #bebebe,
+        -8px -8px 16px #ffffff;
+}
+
+/* Neumorphic buttons */
+.neumorphic-btn {
+    background: #e6e6e6;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 15px;
+    font-size: 16px;
+    font-weight: 500;
+    color: #424242;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow:
+        8px 8px 16px #bebebe,
+        -8px -8px 16px #ffffff;
+    position: relative;
+    outline: none;
+    margin: 5px;
+    min-height: 44px; /* Touch-friendly */
+}
+
+.neumorphic-btn:hover {
+    box-shadow:
+        6px 6px 12px #bebebe,
+        -6px -6px 12px #ffffff;
+}
+
+.neumorphic-btn:active {
+    box-shadow:
+        inset 4px 4px 8px #bebebe,
+        inset -4px -4px 8px #ffffff;
+}
+
+.neumorphic-btn:focus {
+    box-shadow:
+        0 0 0 3px rgba(25, 118, 210, 0.3),
+        8px 8px 16px #bebebe,
+        -8px -8px 16px #ffffff;
+}
+
+/* Views */
+.view {
+    background: #e6e6e6;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 20px;
+    box-shadow:
+        12px 12px 24px #bebebe,
+        -12px -12px 24px #ffffff;
+}
+
+.view h1, .view h2 {
+    color: #424242;
+    margin-top: 0;
+    text-shadow:
+        1px 1px 2px #bebebe,
+        -1px -1px 2px #ffffff;
+}
+
+/* Form elements */
+input, select {
+    background: #e6e6e6;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 16px;
+    color: #424242;
+    box-shadow:
+        inset 4px 4px 8px #bebebe,
+        inset -4px -4px 8px #ffffff;
+    outline: none;
+    margin: 5px 0;
+    width: 100%;
+    max-width: 400px;
+}
+
+input:focus, select:focus {
+    box-shadow:
+        inset 6px 6px 12px #bebebe,
+        inset -6px -6px 12px #ffffff,
+        0 0 0 3px rgba(25, 118, 210, 0.2);
+}
+
+/* Book cards */
+.book-card {
+    background: #e6e6e6;
+    border-radius: 15px;
     padding: 20px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin: 10px;
+    box-shadow:
+        8px 8px 16px #bebebe,
+        -8px -8px 16px #ffffff;
+    text-align: center;
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.book-card h3 {
+    margin: 0 0 10px 0;
+    color: #424242;
+}
+
+.book-card p {
+    margin: 5px 0;
+    color: #666;
+}
+
+/* Comparison container */
+#comparison-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin: 30px 0;
+    flex-wrap: wrap;
+}
+
+#vs-indicator {
+    font-size: 24px;
+    font-weight: bold;
+    color: #666;
+    background: #e6e6e6;
+    padding: 10px 20px;
+    border-radius: 50%;
+    box-shadow:
+        4px 4px 8px #bebebe,
+        -4px -4px 8px #ffffff;
+}
+
+/* Progress bar */
+#progress-bar {
+    background: #e6e6e6;
+    border-radius: 10px;
+    height: 20px;
+    margin: 10px 0;
+    box-shadow:
+        inset 4px 4px 8px #bebebe,
+        inset -4px -4px 8px #ffffff;
+    overflow: hidden;
+}
+
+#progress-bar::after {
+    content: '';
+    display: block;
+    height: 100%;
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    border-radius: 10px;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* Books list */
+#books-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+/* Rankings list */
+#rankings-list {
+    background: #e6e6e6;
+    border-radius: 15px;
+    padding: 20px;
+    margin: 20px 0;
+    box-shadow:
+        inset 6px 6px 12px #bebebe,
+        inset -6px -6px 12px #ffffff;
+}
+
+.ranking-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #cccccc;
+    gap: 15px;
+}
+
+.ranking-item:last-child {
+    border-bottom: none;
+}
+
+.rank-number {
+    font-size: 18px;
+    font-weight: bold;
+    color: #424242;
+    min-width: 30px;
+    text-align: center;
+}
+
+.book-title {
+    flex: 1;
+    font-weight: 500;
+}
+
+.book-author {
+    color: #666;
+    font-style: italic;
+}
+
+.book-rating {
+    color: #1976d2;
+    font-weight: 500;
+    margin-left: auto;
+}
+
+/* Progress bar animation */
+#progress-bar::after {
+    content: '';
+    display: block;
+    height: 100%;
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    border-radius: 10px;
+    width: var(--progress, 0%);
+    transition: width 0.3s ease;
+    box-shadow:
+        inset 2px 2px 4px rgba(0,0,0,0.2),
+        inset -2px -2px 4px rgba(255,255,255,0.5);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    #app {
+        padding: 10px;
+    }
+
+    .view {
+        padding: 20px;
+        margin-bottom: 10px;
+    }
+
+    #main-nav {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .nav-btn {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    #comparison-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    #books-list {
+        grid-template-columns: 1fr;
+    }
+
+    .neumorphic-btn {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    input, select {
+        max-width: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .view {
+        padding: 15px;
+    }
+
+    .nav-btn, .neumorphic-btn {
+        padding: 15px;
+        font-size: 18px; /* Larger for touch */
+    }
+
+    .book-card {
+        min-height: 120px;
+        padding: 15px;
+    }
 }

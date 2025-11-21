@@ -9,74 +9,164 @@
     <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
-    <div id="app">
-        <!-- Views will be rendered here -->
-        <h1>Welcome to Shelf Showdown</h1>
-        <p>Loading...</p>
-        <div id="auth-section">
-            <button id="login-btn" style="display: none;">Login with Google</button>
-            <div id="auth-status">Checking authentication...</div>
-            <button id="logout-btn" style="display: none;">Logout</button>
-        </div>
-        <div id="sheets-section" style="display: none;">
-            <h2>Google Sheets Integration</h2>
-            <div>
-                <label for="spreadsheet-id">Spreadsheet ID:</label>
-                <input type="text" id="spreadsheet-id" placeholder="Enter Google Sheets ID">
-                <button id="test-connection-btn">Test Connection</button>
-                <button id="load-data-btn">Load Sheet Data</button>
-                <button id="parse-books-btn">Parse Books</button>
-                <button id="import-books-btn">Import Books to DB</button>
-                <button id="view-db-btn">View Database</button>
-                <button id="insert-test-data-btn">Insert Test Data</button>
-                <button id="append-test-data-btn">Append Test Data</button>
-            </div>
-            <div id="sheets-status"></div>
-            <div id="sheet-data-display" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 10px; border: 1px solid #ccc;"></div>
-        </div>
+    <div id="app" role="application" aria-label="Shelf Showdown Book Ranking App">
+        <!-- Navigation -->
+        <nav id="main-nav" role="navigation" aria-label="Main navigation">
+            <button id="nav-landing" class="nav-btn active" aria-label="Go to landing page">Home</button>
+            <button id="nav-books" class="nav-btn" aria-label="View and manage books">Books</button>
+            <button id="nav-compare" class="nav-btn" aria-label="Start book comparisons">Compare</button>
+            <button id="nav-results" class="nav-btn" aria-label="View rankings and results">Results</button>
+        </nav>
 
-        <div id="debug-section" style="margin-top: 40px; border-top: 2px solid #ccc; padding-top: 20px;">
-            <h2>🧪 Debug Zone - Test All Features</h2>
+        <!-- Main Content Area -->
+        <main id="main-content">
+
+            <!-- Landing View -->
+            <section id="landing-view" class="view active" role="main" aria-labelledby="landing-title">
+                <h1 id="landing-title">Welcome to Shelf Showdown</h1>
+                <p>Rank your books through systematic pairwise comparisons.</p>
+                <div id="auth-section" aria-labelledby="auth-title">
+                    <h2 id="auth-title">Authentication</h2>
+                    <button id="login-btn" class="neumorphic-btn" style="display: none;" aria-label="Login with Google">Login with Google</button>
+                    <div id="auth-status" aria-live="polite">Checking authentication...</div>
+                    <button id="logout-btn" class="neumorphic-btn" style="display: none;" aria-label="Logout">Logout</button>
+                </div>
+                <div id="sheets-section" style="display: none;" aria-labelledby="sheets-title">
+                    <h2 id="sheets-title">Google Sheets Integration</h2>
+                    <div>
+                        <label for="spreadsheet-id">Spreadsheet ID:</label>
+                        <input type="text" id="spreadsheet-id" placeholder="Enter Google Sheets ID" aria-describedby="spreadsheet-help">
+                        <span id="spreadsheet-help" class="sr-only">Enter your Google Sheets document ID to connect your book list</span>
+                        <button id="test-connection-btn" class="neumorphic-btn" aria-label="Test connection to spreadsheet">Test Connection</button>
+                        <button id="load-data-btn" class="neumorphic-btn" aria-label="Load data from spreadsheet">Load Sheet Data</button>
+                        <button id="parse-books-btn" class="neumorphic-btn" aria-label="Parse books from data">Parse Books</button>
+                        <button id="import-books-btn" class="neumorphic-btn" aria-label="Import books to database">Import Books to DB</button>
+                        <button id="view-db-btn" class="neumorphic-btn" aria-label="View database contents">View Database</button>
+                        <button id="insert-test-data-btn" class="neumorphic-btn" aria-label="Insert test data">Insert Test Data</button>
+                        <button id="append-test-data-btn" class="neumorphic-btn" aria-label="Append test data to sheet">Append Test Data</button>
+                    </div>
+                    <div id="sheets-status" aria-live="polite"></div>
+                    <div id="sheet-data-display" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 10px; border: 1px solid #ccc;" aria-label="Sheet data display"></div>
+                </div>
+            </section>
+
+            <!-- Books View -->
+            <section id="books-view" class="view" role="main" aria-labelledby="books-title" style="display: none;">
+                <h1 id="books-title">Your Books</h1>
+                <div id="books-controls">
+                    <button id="add-book-btn" class="neumorphic-btn" aria-label="Add a new book">Add New Book</button>
+                    <button id="refresh-books-btn" class="neumorphic-btn" aria-label="Refresh book list">Refresh</button>
+                </div>
+                <div id="books-list" aria-label="List of books" role="list"></div>
+                <div id="add-book-form" style="display: none;" aria-labelledby="add-book-form-title">
+                    <h2 id="add-book-form-title">Add New Book</h2>
+                    <form id="book-form">
+                        <div>
+                            <label for="book-title">Title:</label>
+                            <input type="text" id="book-title" required aria-describedby="title-help">
+                            <span id="title-help" class="sr-only">Enter the book title</span>
+                        </div>
+                        <div>
+                            <label for="book-author">Author:</label>
+                            <input type="text" id="book-author" required aria-describedby="author-help">
+                            <span id="author-help" class="sr-only">Enter the book author</span>
+                        </div>
+                        <div>
+                            <label for="book-genre">Genre:</label>
+                            <input type="text" id="book-genre" aria-describedby="genre-help">
+                            <span id="genre-help" class="sr-only">Enter the book genre (optional)</span>
+                        </div>
+                        <button type="submit" class="neumorphic-btn" aria-label="Save new book">Save Book</button>
+                        <button type="button" id="cancel-add-book" class="neumorphic-btn" aria-label="Cancel adding book">Cancel</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Compare View -->
+            <section id="compare-view" class="view" role="main" aria-labelledby="compare-title" style="display: none;">
+                <h1 id="compare-title">Compare Books</h1>
+                <div id="comparison-container">
+                    <div id="book-a" class="book-card" aria-label="First book in comparison"></div>
+                    <div id="vs-indicator" aria-label="versus">VS</div>
+                    <div id="book-b" class="book-card" aria-label="Second book in comparison"></div>
+                </div>
+                <div id="comparison-buttons">
+                    <button id="choose-a-btn" class="neumorphic-btn" aria-label="Choose first book as preferred">Choose Left</button>
+                    <button id="choose-b-btn" class="neumorphic-btn" aria-label="Choose second book as preferred">Choose Right</button>
+                    <button id="skip-comparison-btn" class="neumorphic-btn" aria-label="Skip this comparison">Skip</button>
+                </div>
+                <div id="comparison-progress" aria-live="polite">
+                    <div id="progress-bar"></div>
+                    <span id="progress-text">Comparisons completed: 0</span>
+                </div>
+                <div id="comparison-history" aria-label="Recent comparison history"></div>
+            </section>
+
+            <!-- Results View -->
+            <section id="results-view" class="view" role="main" aria-labelledby="results-title" style="display: none;">
+                <h1 id="results-title">Your Rankings</h1>
+                <div id="results-controls">
+                    <button id="calculate-ranking-btn" class="neumorphic-btn" aria-label="Calculate current ranking">Calculate Ranking</button>
+                    <button id="export-ranking-btn" class="neumorphic-btn" aria-label="Export ranking">Export</button>
+                    <select id="sort-options" aria-label="Sort rankings by">
+                        <option value="rating">By Rating</option>
+                        <option value="title">By Title</option>
+                        <option value="author">By Author</option>
+                        <option value="reads">By Read Count</option>
+                    </select>
+                </div>
+                <div id="rankings-list" aria-label="Ranked list of books" role="list"></div>
+                <div id="ranking-stats" aria-labelledby="stats-title">
+                    <h2 id="stats-title">Reading Statistics</h2>
+                    <div id="stats-content"></div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Debug Section (hidden by default) -->
+        <div id="debug-section" style="display: none; margin-top: 40px; border-top: 2px solid #ccc; padding-top: 20px;" aria-labelledby="debug-title">
+            <h2 id="debug-title">🧪 Debug Zone - Test All Features</h2>
 
             <div style="margin-bottom: 20px;">
                 <h3>🎯 Elo Algorithm Tests</h3>
-                <button id="run-elo-tests-btn">Run Elo Tests</button>
-                <button id="run-simulation-btn">Run Ranking Simulation</button>
-                <button id="run-benchmark-btn">Run Performance Benchmark</button>
-                <button id="check-integrity-btn">Check Data Integrity</button>
-                <button id="init-ratings-btn">Initialize Book Ratings</button>
+                <button id="run-elo-tests-btn" class="neumorphic-btn" aria-label="Run Elo algorithm tests">Run Elo Tests</button>
+                <button id="run-simulation-btn" class="neumorphic-btn" aria-label="Run ranking simulation">Run Ranking Simulation</button>
+                <button id="run-benchmark-btn" class="neumorphic-btn" aria-label="Run performance benchmark">Run Performance Benchmark</button>
+                <button id="check-integrity-btn" class="neumorphic-btn" aria-label="Check data integrity">Check Data Integrity</button>
+                <button id="init-ratings-btn" class="neumorphic-btn" aria-label="Initialize book ratings">Initialize Book Ratings</button>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <h3>⚖️ Comparison System Tests</h3>
-                <button id="create-test-comparison-btn">Create Test Comparison</button>
-                <button id="process-comparisons-btn">Process Comparisons & Update Ratings</button>
-                <button id="view-comparison-history-btn">View Comparison History</button>
-                <button id="get-comparison-stats-btn">Get Comparison Stats</button>
+                <button id="create-test-comparison-btn" class="neumorphic-btn" aria-label="Create test comparison">Create Test Comparison</button>
+                <button id="process-comparisons-btn" class="neumorphic-btn" aria-label="Process comparisons">Process Comparisons & Update Ratings</button>
+                <button id="view-comparison-history-btn" class="neumorphic-btn" aria-label="View comparison history">View Comparison History</button>
+                <button id="get-comparison-stats-btn" class="neumorphic-btn" aria-label="Get comparison statistics">Get Comparison Stats</button>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <h3>🏆 Ranking System Tests</h3>
-                <button id="calculate-ranking-btn">Calculate & Store Ranking</button>
-                <button id="view-latest-ranking-btn">View Latest Ranking</button>
-                <button id="view-ranking-history-btn">View Ranking History</button>
+                <button id="debug-calculate-ranking-btn" class="neumorphic-btn" aria-label="Calculate ranking">Calculate & Store Ranking</button>
+                <button id="view-latest-ranking-btn" class="neumorphic-btn" aria-label="View latest ranking">View Latest Ranking</button>
+                <button id="view-ranking-history-btn" class="neumorphic-btn" aria-label="View ranking history">View Ranking History</button>
             </div>
 
             <div style="margin-bottom: 20px;">
                 <h3>📊 Google Sheets Sync Tests</h3>
-                <button id="export-spreadsheet-btn">Export Spreadsheet Data</button>
-                <button id="sync-to-sheets-btn">Sync Changes to Google Sheets</button>
-                <button id="force-sync-to-sheets-btn">Force Sync All to Google Sheets</button>
-                <button id="view-sync-status-btn">View Sync Status</button>
-                <button id="process-sync-queue-btn">Process Sync Queue</button>
+                <button id="export-spreadsheet-btn" class="neumorphic-btn" aria-label="Export spreadsheet data">Export Spreadsheet Data</button>
+                <button id="sync-to-sheets-btn" class="neumorphic-btn" aria-label="Sync to sheets">Sync Changes to Google Sheets</button>
+                <button id="force-sync-to-sheets-btn" class="neumorphic-btn" aria-label="Force sync to sheets">Force Sync All to Google Sheets</button>
+                <button id="view-sync-status-btn" class="neumorphic-btn" aria-label="View sync status">View Sync Status</button>
+                <button id="process-sync-queue-btn" class="neumorphic-btn" aria-label="Process sync queue">Process Sync Queue</button>
             </div>
 
             <div style="margin-bottom: 20px;">
-                <button id="clear-debug-btn">Clear Debug Output</button>
+                <button id="clear-debug-btn" class="neumorphic-btn" aria-label="Clear debug output">Clear Debug Output</button>
             </div>
 
-            <div id="debug-status"></div>
-            <div id="debug-output" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; max-height: 600px; overflow-y: auto;"></div>
+            <div id="debug-status" aria-live="polite"></div>
+            <div id="debug-output" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; max-height: 600px; overflow-y: auto;" aria-label="Debug output"></div>
         </div>
     </div>
     <script type="module" src="app.js"></script>
