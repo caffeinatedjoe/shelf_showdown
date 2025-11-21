@@ -13,6 +13,27 @@
         <!-- Views will be rendered here -->
         <h1>Welcome to Shelf Showdown</h1>
         <p>Loading...</p>
+        <div id="auth-section">
+            <button id="login-btn" style="display: none;">Login with Google</button>
+            <div id="auth-status">Checking authentication...</div>
+            <button id="logout-btn" style="display: none;">Logout</button>
+        </div>
+        <div id="sheets-section" style="display: none;">
+            <h2>Google Sheets Integration</h2>
+            <div>
+                <label for="spreadsheet-id">Spreadsheet ID:</label>
+                <input type="text" id="spreadsheet-id" placeholder="Enter Google Sheets ID">
+                <button id="test-connection-btn">Test Connection</button>
+                <button id="load-data-btn">Load Sheet Data</button>
+                <button id="parse-books-btn">Parse Books</button>
+                <button id="import-books-btn">Import Books to DB</button>
+                <button id="view-db-btn">View Database</button>
+                <button id="insert-test-data-btn">Insert Test Data</button>
+                <button id="append-test-data-btn">Append Test Data</button>
+            </div>
+            <div id="sheets-status"></div>
+            <div id="sheet-data-display" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 10px; border: 1px solid #ccc;"></div>
+        </div>
     </div>
     <script type="module" src="app.js"></script>
 </body>

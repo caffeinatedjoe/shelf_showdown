@@ -17,31 +17,31 @@ This comprehensive backlog contains all planned tasks derived from user stories,
 - [x] Configure OAuth consent screen with appropriate scopes
 - [x] Implement OAuth authentication function in auth.js
 - [x] Add token storage and refresh logic in IndexedDB
-- [ ] Create authentication UI elements (login button, status display)
+- [x] Create authentication UI elements (login button, status display)
 
 ### IndexedDB Setup
-- [ ] Implement IndexedDB database initialization in db.js
-- [ ] Create object stores: books, comparisons, rankings, sessions
-- [ ] Add indexes for efficient queries (book id, title, author, etc.)
-- [ ] Implement basic CRUD operations for each store
-- [ ] Add error handling for IndexedDB operations
-- [ ] Create utility functions for database transactions
+- [x] Implement IndexedDB database initialization in db.js
+- [x] Create object stores: books, comparisons, rankings, sessions
+- [x] Add indexes for efficient queries (book id, title, author, etc.)
+- [x] Implement basic CRUD operations for each store
+- [x] Add error handling for IndexedDB operations
+- [x] Create utility functions for database transactions
 
 ### Google Sheets Integration
-- [ ] Load Google API client library script in HTML
-- [ ] Implement function to read spreadsheet metadata
-- [ ] Create function to read all rows from specified sheet
-- [ ] Parse CSV/Sheets data into Book objects
-- [ ] Store imported books in IndexedDB
-- [ ] Add error handling for API failures and network issues
-- [ ] Implement offline detection and fallback behavior
+- [x] Load Google API client library script in HTML
+- [x] Implement function to read spreadsheet metadata
+- [x] Create function to read all rows from specified sheet
+- [x] Parse Sheets data into Book objects
+- [x] Store imported books in IndexedDB
+- [x] Add error handling for API failures and network issues
+- [x] Implement offline detection and fallback behavior
 
 ### Data Verification
-- [ ] Create console logging for data import verification
-- [ ] Add data validation for required book fields
-- [ ] Implement data sanitization for Sheets input
-- [ ] Create test data insertion for development
-- [ ] Add data export to console for debugging
+- [x] Create console logging for data import verification
+- [x] Add data validation for required book fields
+- [x] Implement data sanitization for Sheets input
+- [x] Create test data insertion for development
+- [x] Add data export to console for debugging
 
 ## Sprint 2: Comparison and Ranking Logic
 ### Elo Algorithm Implementation

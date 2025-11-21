@@ -72,25 +72,6 @@ function clearStoredToken() {
   });
 }
 
-// Initialize Google API client
-function initGapi() {
-  return new Promise((resolve, reject) => {
-    if (window.gapi) {
-      window.gapi.load('client', () => {
-        window.gapi.client.init({
-          apiKey: null, // Not needed for OAuth flow
-          clientId: CONFIG.GOOGLE_CLIENT_ID,
-          scope: 'https://www.googleapis.com/auth/spreadsheets.readonly https://www.googleapis.com/auth/spreadsheets',
-          discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
-        }).then(() => {
-          resolve();
-        }).catch(reject);
-      });
-    } else {
-      reject(new Error('GAPI not loaded'));
-    }
-  });
-}
 
 // Authenticate user and get access token
 async function authenticate() {
@@ -149,28 +130,20 @@ async function signOut() {
   } catch (error) {
     console.error('Error clearing stored token:', error);
   }
-  if (window.gapi && window.gapi.client.getToken()) {
-    window.google.accounts.oauth2.revoke(window.gapi.client.getToken().access_token, () => {
-      window.gapi.client.setToken(null);
-    });
-  }
 }
 
-// Restore token from storage and set in gapi
+// Restore token from storage
 async function restoreToken() {
   if (!db) {
     await initAuthDB();
   }
   try {
     const token = await getStoredToken();
-    if (token && window.gapi) {
-      window.gapi.client.setToken({ access_token: token });
-      return true;
-    }
+    return token !== null;
   } catch (error) {
     console.error('Error restoring token:', error);
+    return false;
   }
-  return false;
 }
 
-export { initGapi, authenticate, isAuthenticated, signOut, restoreToken };
+export { authenticate, isAuthenticated, signOut, restoreToken };
