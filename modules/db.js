@@ -2,7 +2,7 @@
 // Handles IndexedDB operations for books, comparisons, rankings, and sessions
 
 const DB_NAME = 'ShelfShowdownDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let db;
 
 export function initDB() {
@@ -19,7 +19,8 @@ export function initDB() {
         };
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
-            console.log('Upgrading IndexedDB');
+            const oldVersion = event.oldVersion;
+            console.log(`Upgrading IndexedDB from version ${oldVersion} to ${DB_VERSION}`);
 
             // Books store
             if (!db.objectStoreNames.contains('books')) {
@@ -38,10 +39,14 @@ export function initDB() {
                 comparisonsStore.createIndex('winner', 'winner', { unique: false });
             }
 
-            // Rankings store
-            if (!db.objectStoreNames.contains('rankings')) {
-                const rankingsStore = db.createObjectStore('rankings', { keyPath: 'id' });
-                rankingsStore.createIndex('score', 'score', { unique: false });
+            // Rankings store - recreate with autoIncrement for versions < 2
+            if (!db.objectStoreNames.contains('rankings') || oldVersion < 2) {
+                if (db.objectStoreNames.contains('rankings')) {
+                    db.deleteObjectStore('rankings');
+                    console.log('Recreating rankings store with autoIncrement');
+                }
+                const rankingsStore = db.createObjectStore('rankings', { keyPath: 'id', autoIncrement: true });
+                rankingsStore.createIndex('timestamp', 'timestamp', { unique: false });
             }
 
             // Sessions store
@@ -446,6 +451,117 @@ export async function exportDatabaseToConsole() {
     } catch (error) {
         console.error('❌ Database export failed:', error);
         console.log('='.repeat(60));
+        throw error;
+    }
+}
+
+/**
+ * Exports database in spreadsheet-ready format with enhanced ranking data.
+ * @returns {Promise<Object>} Spreadsheet-ready export data.
+ */
+export async function exportForSpreadsheet() {
+    console.log('📊 Preparing spreadsheet export...');
+
+    try {
+        // Get all books and comparisons
+        const [books, allComparisons] = await Promise.all([
+            getAllBooks(),
+            getAllComparisons()
+        ]);
+
+        // Calculate comparison counts for each book
+        const comparisonCounts = {};
+        books.forEach(book => {
+            comparisonCounts[book.id] = 0;
+        });
+
+        allComparisons.forEach(comp => {
+            if (comparisonCounts[comp.bookA] !== undefined) {
+                comparisonCounts[comp.bookA]++;
+            }
+            if (comparisonCounts[comp.bookB] !== undefined) {
+                comparisonCounts[comp.bookB]++;
+            }
+        });
+
+        // Create spreadsheet rows
+        const headers = [
+            'Title',
+            'Author',
+            'Genre',
+            'Dates Read',
+            'Read Count',
+            'Elo Rating',
+            'Comparisons',
+            'Rating Rank',
+            'Book ID'
+        ];
+
+        // Sort books by rating (highest first) for ranking
+        const sortedBooks = books
+            .filter(book => typeof book.rating === 'number')
+            .sort((a, b) => b.rating - a.rating);
+
+        const ratedBookIds = new Set(sortedBooks.map(book => book.id));
+        const unratedBooks = books.filter(book => !ratedBookIds.has(book.id));
+
+        // Create rows for rated books (with ranking)
+        const ratedRows = sortedBooks.map((book, index) => [
+            book.title || '',
+            book.author || '',
+            book.genre || '',
+            book.datesRead.join('; ') || '',
+            book.datesRead.length,
+            Math.round(book.rating),
+            comparisonCounts[book.id] || 0,
+            index + 1, // Ranking position
+            book.id
+        ]);
+
+        // Create rows for unrated books
+        const unratedRows = unratedBooks.map(book => [
+            book.title || '',
+            book.author || '',
+            book.genre || '',
+            book.datesRead.join('; ') || '',
+            book.datesRead.length,
+            'Unrated',
+            comparisonCounts[book.id] || 0,
+            'N/A',
+            book.id
+        ]);
+
+        const allRows = [headers, ...ratedRows, ...unratedRows];
+
+        // Summary statistics
+        const stats = {
+            totalBooks: books.length,
+            ratedBooks: sortedBooks.length,
+            unratedBooks: unratedBooks.length,
+            totalComparisons: allComparisons.length,
+            averageRating: sortedBooks.length > 0 ?
+                Math.round(sortedBooks.reduce((sum, book) => sum + book.rating, 0) / sortedBooks.length) : 'N/A',
+            highestRating: sortedBooks.length > 0 ? Math.round(sortedBooks[0].rating) : 'N/A',
+            lowestRating: sortedBooks.length > 0 ? Math.round(sortedBooks[sortedBooks.length - 1].rating) : 'N/A',
+            mostComparedBook: Object.entries(comparisonCounts)
+                .sort(([,a], [,b]) => b - a)[0] || ['None', 0],
+            exportTimestamp: new Date().toISOString()
+        };
+
+        console.log(`✅ Spreadsheet export ready: ${allRows.length - 1} books exported`);
+
+        return {
+            spreadsheetData: allRows,
+            summary: stats,
+            metadata: {
+                exportedAt: stats.exportTimestamp,
+                version: '1.0',
+                description: 'Shelf Showdown ranking export with Elo ratings and comparison data'
+            }
+        };
+
+    } catch (error) {
+        console.error('❌ Spreadsheet export failed:', error);
         throw error;
     }
 }

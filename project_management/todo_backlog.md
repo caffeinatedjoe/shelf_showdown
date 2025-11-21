@@ -45,38 +45,38 @@ This comprehensive backlog contains all planned tasks derived from user stories,
 
 ## Sprint 2: Comparison and Ranking Logic
 ### Elo Algorithm Implementation
-- [ ] Implement Elo rating calculation function in ranking.js
-- [ ] Define K-factor and initial score constants
-- [ ] Create function to update scores after comparison
-- [ ] Add score validation and bounds checking
-- [ ] Implement ranking calculation from scores
+- [x] Implement Elo rating calculation function in ranking.js
+- [x] Define K-factor and initial score constants
+- [x] Create function to update scores after comparison
+- [x] Add score validation and bounds checking
+- [x] Implement ranking calculation from scores
 
 ### Comparison Logic
-- [ ] Create Comparison object constructor
-- [ ] Implement comparison storage in IndexedDB
-- [ ] Add comparison retrieval by book IDs
-- [ ] Create comparison history tracking
-- [ ] Implement comparison validation (prevent duplicate pairs)
+- [x] Create Comparison object constructor
+- [x] Implement comparison storage in IndexedDB
+- [x] Add comparison retrieval by book IDs
+- [x] Create comparison history tracking
+- [x] Implement comparison validation (prevent duplicate pairs)
 
 ### Ranking System
-- [ ] Create Ranking object constructor
-- [ ] Implement ranking storage and updates
-- [ ] Add ranking calculation from all comparisons
-- [ ] Create ranking retrieval and sorting functions
-- [ ] Implement ranking persistence across sessions
+- [x] Create Ranking object constructor
+- [x] Implement ranking storage and updates
+- [x] Add ranking calculation from all comparisons
+- [x] Create ranking retrieval and sorting functions
+- [x] Implement ranking persistence across sessions
 
 ### Google Sheets Write Integration
-- [ ] Implement function to append new books to Sheets
-- [ ] Add row ID tracking for Sheets synchronization
-- [ ] Create sync queue for offline changes
-- [ ] Implement conflict resolution for concurrent edits
-- [ ] Add write operation error handling
+- [x] Implement function to append new books to Sheets
+- [x] Add row ID tracking for Sheets synchronization
+- [x] Create sync queue for offline changes
+- [x] Implement conflict resolution for concurrent edits
+- [x] Add write operation error handling
 
 ### Console Testing
-- [ ] Create test functions for Elo calculations
-- [ ] Implement console-based ranking simulation
-- [ ] Add data integrity checks
-- [ ] Create performance benchmarks for large datasets
+- [x] Create test functions for Elo calculations
+- [x] Implement console-based ranking simulation
+- [x] Add data integrity checks
+- [x] Create performance benchmarks for large datasets
 
 ## Sprint 3: UI Integration and Basic Interface
 ### HTML Structure

@@ -3,7 +3,11 @@ console.log('Shelf Showdown app loaded');
 
 import { authenticate, isAuthenticated, signOut, restoreToken } from './modules/auth.js';
 import { initSheetsAPI, getSpreadsheetMetadata, readSheetData, appendSheetData, parseSheetDataToBooks, importBooksToDB } from './modules/sheets.js';
-import { initDB, getAllBooks, deleteBook, insertTestData, exportDatabaseToConsole } from './modules/db.js';
+import { initDB, getAllBooks, updateBook, deleteBook, insertTestData, exportDatabaseToConsole, exportForSpreadsheet } from './modules/db.js';
+import { testEloCalculations, simulateRanking, checkDataIntegrity, benchmarkPerformance, initializeBookRatings, INITIAL_RATING, K_FACTOR } from './modules/ranking.js';
+import { Comparison, storeComparison, getComparisonsByBookIds, getComparisonHistory, getComparisonStats, processAllComparisons } from './modules/comparisons.js';
+import { calculateCurrentRanking, getLatestRanking, getAllRankingsHistory, updateCurrentRanking } from './modules/rankings.js';
+import { syncToSheets, getSyncStatus, processSyncQueue } from './modules/sheets.js';
 
 // Basic app structure
 const app = {
@@ -112,9 +116,44 @@ const app = {
             }
         };
 
+        window.testRanking = {
+            testEloCalculations: () => {
+                console.log('Running Elo calculation tests...');
+                testEloCalculations();
+            },
+            simulateRanking: (numBooks = 10, numComparisons = 100) => {
+                console.log(`Simulating ranking with ${numBooks} books and ${numComparisons} comparisons...`);
+                const ranking = simulateRanking(numBooks, numComparisons);
+                return ranking;
+            },
+            checkDataIntegrity: (books) => {
+                if (!books) {
+                    console.log('No books provided, fetching from database...');
+                    return getAllBooks().then(fetchedBooks => {
+                        console.log(`Checking integrity of ${fetchedBooks.length} books from database...`);
+                        return checkDataIntegrity(fetchedBooks);
+                    });
+                }
+                console.log(`Checking integrity of ${books.length} provided books...`);
+                return checkDataIntegrity(books);
+            },
+            benchmarkPerformance: (numBooks = 1000, numComparisons = 10000) => {
+                console.log(`Benchmarking with ${numBooks} books and ${numComparisons} comparisons...`);
+                const result = benchmarkPerformance(numBooks, numComparisons);
+                return result;
+            },
+            constants: {
+                INITIAL_RATING,
+                K_FACTOR
+            }
+        };
+
         console.log('Test functions available:');
         console.log('- window.testAuth.authenticate(), window.testAuth.checkAuth(), window.testAuth.signOut()');
         console.log('- window.testDB.viewBooks(), window.testDB.exportToConsole(), window.testDB.insertTestData(), window.testDB.clearBooks()');
+        console.log('- window.testRanking.testEloCalculations(), window.testRanking.simulateRanking(numBooks, numComparisons)');
+        console.log('- window.testRanking.checkDataIntegrity(books?), window.testRanking.benchmarkPerformance(numBooks, numComparisons)');
+        console.log('- window.testRanking.constants (shows INITIAL_RATING and K_FACTOR)');
     },
 
     updateAuthUI: async function() {
@@ -524,6 +563,624 @@ Books in database after import:`;
                 statusDiv.textContent = `Append failed: ${error.message}`;
                 statusDiv.style.color = 'red';
             }
+        });
+
+        // Debug zone event listeners
+        document.getElementById('run-elo-tests-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Running Elo calculation tests...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            // Capture console output
+            const originalLog = console.log;
+            const originalError = console.error;
+            let capturedOutput = '';
+
+            console.log = (...args) => {
+                capturedOutput += args.join(' ') + '\n';
+                originalLog(...args);
+            };
+            console.error = (...args) => {
+                capturedOutput += 'ERROR: ' + args.join(' ') + '\n';
+                originalError(...args);
+            };
+
+            try {
+                testEloCalculations();
+                statusDiv.textContent = 'Elo tests completed successfully!';
+                statusDiv.style.color = 'green';
+                outputDiv.textContent = capturedOutput;
+            } catch (error) {
+                statusDiv.textContent = `Elo tests failed: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = capturedOutput + '\nERROR: ' + error.message;
+            } finally {
+                // Restore console
+                console.log = originalLog;
+                console.error = originalError;
+            }
+        });
+
+        document.getElementById('run-simulation-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Running ranking simulation...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            const originalLog = console.log;
+            let capturedOutput = '';
+
+            console.log = (...args) => {
+                capturedOutput += args.join(' ') + '\n';
+                originalLog(...args);
+            };
+
+            try {
+                const ranking = simulateRanking(10, 50);
+                statusDiv.textContent = 'Ranking simulation completed!';
+                statusDiv.style.color = 'green';
+                outputDiv.textContent = capturedOutput;
+            } catch (error) {
+                statusDiv.textContent = `Simulation failed: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = capturedOutput + '\nERROR: ' + error.message;
+            } finally {
+                console.log = originalLog;
+            }
+        });
+
+        document.getElementById('run-benchmark-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Running performance benchmark...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            const originalLog = console.log;
+            let capturedOutput = '';
+
+            console.log = (...args) => {
+                capturedOutput += args.join(' ') + '\n';
+                originalLog(...args);
+            };
+
+            try {
+                const result = benchmarkPerformance(500, 2500); // Smaller numbers for UI responsiveness
+                statusDiv.textContent = 'Benchmark completed!';
+                statusDiv.style.color = 'green';
+                outputDiv.textContent = capturedOutput;
+            } catch (error) {
+                statusDiv.textContent = `Benchmark failed: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = capturedOutput + '\nERROR: ' + error.message;
+            } finally {
+                console.log = originalLog;
+            }
+        });
+
+        document.getElementById('check-integrity-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Checking data integrity...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            const originalLog = console.log;
+            const originalWarn = console.warn;
+            let capturedOutput = '';
+
+            console.log = (...args) => {
+                capturedOutput += args.join(' ') + '\n';
+                originalLog(...args);
+            };
+            console.warn = (...args) => {
+                capturedOutput += 'WARNING: ' + args.join(' ') + '\n';
+                originalWarn(...args);
+            };
+
+            try {
+                const books = await getAllBooks();
+                const results = checkDataIntegrity(books);
+                const hasIssues = results.invalidRatings > 0;
+                statusDiv.textContent = `Integrity check completed! ${results.booksWithRatings} rated, ${results.booksWithoutRatings} unrated, ${results.invalidRatings} invalid.`;
+                statusDiv.style.color = hasIssues ? 'orange' : 'green';
+                outputDiv.textContent = capturedOutput;
+            } catch (error) {
+                statusDiv.textContent = `Integrity check failed: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = capturedOutput + '\nERROR: ' + error.message;
+            } finally {
+                console.log = originalLog;
+                console.warn = originalWarn;
+            }
+        });
+
+        document.getElementById('init-ratings-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Initializing book ratings...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const books = await getAllBooks();
+                const booksNeedingRatings = books.filter(book => book.rating === undefined || book.rating === null);
+                const initializedBooks = initializeBookRatings(books);
+
+                let updated = 0;
+                for (const book of initializedBooks) {
+                    if (booksNeedingRatings.some(b => b.id === book.id)) {
+                        await updateBook(book);
+                        updated++;
+                    }
+                }
+
+                statusDiv.textContent = `Ratings initialized! ${updated} books updated with initial rating of ${INITIAL_RATING}.`;
+                statusDiv.style.color = 'green';
+                outputDiv.textContent = `Initialized ratings for ${updated} books.\nAll books now have Elo ratings starting at ${INITIAL_RATING}.`;
+            } catch (error) {
+                statusDiv.textContent = `Rating initialization failed: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        // Comparison System Tests
+        document.getElementById('create-test-comparison-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Creating test comparison...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const books = await getAllBooks();
+                if (books.length < 2) {
+                    throw new Error('Need at least 2 books to create a comparison. Please import or add books first.');
+                }
+
+                // Pick two random books
+                const bookA = books[Math.floor(Math.random() * books.length)];
+                let bookB = books[Math.floor(Math.random() * books.length)];
+                while (bookB.id === bookA.id) {
+                    bookB = books[Math.floor(Math.random() * books.length)];
+                }
+
+                // Create comparison (random winner)
+                const winner = Math.random() < 0.5 ? bookA : bookB;
+                const comparison = new Comparison(bookA.id, bookB.id, winner.id);
+
+                // Store comparison
+                const comparisonId = await storeComparison(comparison);
+
+                statusDiv.textContent = 'Test comparison created successfully!';
+                statusDiv.style.color = 'green';
+                outputDiv.textContent = `✅ Created comparison (ID: ${comparisonId}):
+- "${bookA.title}" by ${bookA.author} vs "${bookB.title}" by ${bookB.author}
+- Winner: "${winner.title}" by ${winner.author}
+- Timestamp: ${new Date(comparison.timestamp).toLocaleString()}`;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to create test comparison: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('view-comparison-history-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Loading comparison history...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const books = await getAllBooks();
+                if (books.length === 0) {
+                    throw new Error('No books found. Please import books first.');
+                }
+
+                // Get history for the first book (as an example)
+                const history = await getComparisonHistory(books[0].id, 10);
+
+                statusDiv.textContent = `Found ${history.length} comparisons for "${books[0].title}"`;
+                statusDiv.style.color = 'blue';
+
+                if (history.length === 0) {
+                    outputDiv.textContent = `No comparisons found for "${books[0].title}". Create some test comparisons first.`;
+                    return;
+                }
+
+                let output = `📚 Comparison History for "${books[0].title}" by ${books[0].author}:\n\n`;
+
+                for (let i = 0; i < history.length; i++) {
+                    const comp = history[i];
+                    const opponentBook = books.find(b => b.id === (comp.bookA === books[0].id ? comp.bookB : comp.bookA));
+                    const winnerBook = books.find(b => b.id === comp.winner);
+                    const result = comp.winner === books[0].id ? 'WON' : 'LOST';
+
+                    output += `${i + 1}. vs "${opponentBook.title}" by ${opponentBook.author}\n`;
+                    output += `   Result: ${result} (${new Date(comp.timestamp).toLocaleString()})\n\n`;
+                }
+
+                outputDiv.textContent = output;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to load comparison history: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('process-comparisons-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Processing comparisons and updating ratings...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const results = await processAllComparisons();
+
+                statusDiv.textContent = 'Comparisons processed successfully!';
+                statusDiv.style.color = 'green';
+
+                outputDiv.textContent = `🎯 Comparison Processing Results:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Comparisons Processed: ${results.processedComparisons || 0}
+Books Updated: ${results.updatedBooks || 0}
+Total Books: ${results.totalBooks || 0}
+Message: ${results.message || 'Processing completed'}`;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to process comparisons: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('get-comparison-stats-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Calculating comparison statistics...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const stats = await getComparisonStats();
+
+                statusDiv.textContent = 'Comparison statistics calculated!';
+                statusDiv.style.color = 'green';
+
+                outputDiv.textContent = `📊 Comparison Statistics:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total Comparisons: ${stats.totalComparisons}
+Unique Book Pairs: ${stats.uniqueBookPairs}
+Books Compared: ${stats.booksCompared}
+Most Active Book: ${stats.mostActiveBook ? `Book ID ${stats.mostActiveBook} (${stats.mostActiveBookComparisons} comparisons)` : 'None'}`;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to get comparison stats: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        // Ranking System Tests
+        document.getElementById('calculate-ranking-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Calculating and storing current ranking...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const ranking = await updateCurrentRanking({ source: 'debug_ui' });
+
+                statusDiv.textContent = 'Ranking calculated and stored successfully!';
+                statusDiv.style.color = 'green';
+
+                const stats = ranking.getStats();
+                outputDiv.textContent = `🏆 Current Ranking Calculated:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total Books Ranked: ${stats.totalBooks}
+Rating Range: ${stats.lowestRating} - ${stats.highestRating}
+Average Rating: ${stats.averageRating}
+Timestamp: ${new Date(ranking.timestamp).toLocaleString()}
+
+Top 5 Books:
+${ranking.getTopBooks(5).map((book, index) =>
+    `${index + 1}. "${book.title}" by ${book.author} (Rating: ${book.rating})`
+).join('\n')}`;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to calculate ranking: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('view-latest-ranking-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Loading latest ranking...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const ranking = await getLatestRanking();
+
+                if (!ranking) {
+                    statusDiv.textContent = 'No rankings found. Calculate a ranking first.';
+                    statusDiv.style.color = 'orange';
+                    outputDiv.textContent = 'No ranking snapshots found. Click "Calculate & Store Ranking" first.';
+                    return;
+                }
+
+                statusDiv.textContent = 'Latest ranking loaded!';
+                statusDiv.style.color = 'green';
+
+                const stats = ranking.getStats();
+                outputDiv.textContent = `🏆 Latest Ranking Snapshot:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Created: ${new Date(ranking.timestamp).toLocaleString()}
+Total Books: ${stats.totalBooks}
+Rating Range: ${stats.lowestRating} - ${stats.highestRating}
+Average Rating: ${stats.averageRating}
+
+Top 10 Books:
+${ranking.getTopBooks(10).map((book, index) =>
+    `${index + 1}. "${book.title}" by ${book.author} (Rating: ${book.rating})`
+).join('\n')}`;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to load latest ranking: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('view-ranking-history-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Loading ranking history...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const rankings = await getAllRankingsHistory(5); // Last 5 rankings
+
+                if (rankings.length === 0) {
+                    statusDiv.textContent = 'No ranking history found.';
+                    statusDiv.style.color = 'orange';
+                    outputDiv.textContent = 'No ranking snapshots found. Create some rankings first.';
+                    return;
+                }
+
+                statusDiv.textContent = `Found ${rankings.length} ranking snapshots!`;
+                statusDiv.style.color = 'green';
+
+                let output = `📈 Ranking History (Last ${rankings.length} snapshots):\n`;
+                output += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+
+                rankings.forEach((ranking, index) => {
+                    const stats = ranking.getStats();
+                    output += `Snapshot ${index + 1}: ${new Date(ranking.timestamp).toLocaleString()}\n`;
+                    output += `Books: ${stats.totalBooks}, Avg Rating: ${stats.averageRating}\n`;
+                    output += `Top Book: "${ranking.rankedBooks[0].title}" (${ranking.rankedBooks[0].rating})\n\n`;
+                });
+
+                outputDiv.textContent = output;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to load ranking history: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        // Google Sheets Sync Tests
+        document.getElementById('export-spreadsheet-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Exporting spreadsheet data...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const exportData = await exportForSpreadsheet();
+
+                statusDiv.textContent = 'Spreadsheet data exported successfully!';
+                statusDiv.style.color = 'green';
+
+                // Format the data for display
+                const stats = exportData.summary;
+                let output = `📊 Spreadsheet Export Summary:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total Books: ${stats.totalBooks}
+Rated Books: ${stats.ratedBooks}
+Unrated Books: ${stats.unratedBooks}
+Total Comparisons: ${stats.totalComparisons}
+
+📈 Rating Statistics:
+Highest Rating: ${stats.highestRating}
+Lowest Rating: ${stats.lowestRating}
+Average Rating: ${stats.averageRating}
+Most Compared Book: ${stats.mostComparedBook[0]} (${stats.mostComparedBook[1]} comparisons)
+
+📋 Spreadsheet Data (Copy to Google Sheets):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+
+                // Format the spreadsheet rows as tab-separated values for easy copying
+                exportData.spreadsheetData.forEach((row, index) => {
+                    if (index === 0) {
+                        output += row.join('\t') + '\n'; // Headers
+                        output += '─'.repeat(80) + '\n'; // Separator
+                    } else {
+                        output += row.join('\t') + '\n';
+                    }
+                });
+
+                output += `\n💡 Copy the data above and paste into Google Sheets (use "Paste special" > "Paste values only")`;
+
+                outputDiv.textContent = output;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to export spreadsheet data: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('sync-to-sheets-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+            const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
+
+            if (!spreadsheetId) {
+                statusDiv.textContent = 'Please enter a spreadsheet ID first!';
+                statusDiv.style.color = 'red';
+                return;
+            }
+
+            statusDiv.textContent = 'Syncing to Google Sheets...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const results = await syncToSheets(spreadsheetId, false);
+
+                statusDiv.textContent = 'Sync completed!';
+                statusDiv.style.color = 'green';
+
+                outputDiv.textContent = `📊 Sync Results:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+New Books Added: ${results.newBooksAdded || 0}
+Books Updated: ${results.booksUpdated || 0}
+Errors: ${results.errors || 0}
+Message: ${results.message || 'Sync completed successfully'}`;
+
+            } catch (error) {
+                statusDiv.textContent = `Sync failed: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('view-sync-status-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Checking sync status...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const status = getSyncStatus();
+
+                statusDiv.textContent = 'Sync status retrieved!';
+                statusDiv.style.color = 'blue';
+
+                outputDiv.textContent = `🔄 Sync Queue Status:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Queued Operations: ${status.queuedOperations}
+Currently Processing: ${status.isProcessing ? 'Yes' : 'No'}
+
+${status.operations.length > 0 ?
+    'Queued Operations:\n' + status.operations.map((op, index) =>
+        `${index + 1}. ${op.type} (${new Date(op.timestamp).toLocaleString()}, ${op.retries} retries)`
+    ).join('\n')
+    : 'No operations currently queued.'}`;
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to get sync status: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('process-sync-queue-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+
+            statusDiv.textContent = 'Processing sync queue...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                await processSyncQueue();
+                statusDiv.textContent = 'Sync queue processed!';
+                statusDiv.style.color = 'green';
+                outputDiv.textContent = '✅ Sync queue processing completed. Check sync status for results.';
+
+            } catch (error) {
+                statusDiv.textContent = `Failed to process sync queue: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('force-sync-to-sheets-btn').addEventListener('click', async () => {
+            const statusDiv = document.getElementById('debug-status');
+            const outputDiv = document.getElementById('debug-output');
+            const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
+
+            if (!spreadsheetId) {
+                statusDiv.textContent = 'Please enter a spreadsheet ID first!';
+                statusDiv.style.color = 'red';
+                return;
+            }
+
+            const confirmed = confirm('This will COMPLETELY OVERWRITE your Google Sheet with current local data. All existing sheet data will be lost. Continue?');
+            if (!confirmed) {
+                statusDiv.textContent = 'Force sync cancelled';
+                return;
+            }
+
+            statusDiv.textContent = 'Force syncing all data to Google Sheets...';
+            statusDiv.style.color = 'black';
+            outputDiv.textContent = '';
+
+            try {
+                const results = await syncToSheets(spreadsheetId, true);
+
+                statusDiv.textContent = 'Force sync completed!';
+                statusDiv.style.color = 'green';
+
+                outputDiv.textContent = `🔄 Force Sync Results:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Books Force Synced: ${results.forceSynced || 0}
+Message: ${results.message || 'Force sync completed successfully'}
+
+⚠️  WARNING: This COMPLETELY OVERWROTE your Google Sheet!
+💡 Your sheet now contains all current ranking data with Elo ratings.`;
+
+            } catch (error) {
+                statusDiv.textContent = `Force sync failed: ${error.message}`;
+                statusDiv.style.color = 'red';
+                outputDiv.textContent = `ERROR: ${error.message}`;
+            }
+        });
+
+        document.getElementById('clear-debug-btn').addEventListener('click', () => {
+            document.getElementById('debug-status').textContent = '';
+            document.getElementById('debug-output').textContent = '';
         });
     }
 };

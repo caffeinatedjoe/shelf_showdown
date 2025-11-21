@@ -34,6 +34,50 @@
             <div id="sheets-status"></div>
             <div id="sheet-data-display" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 10px; border: 1px solid #ccc;"></div>
         </div>
+
+        <div id="debug-section" style="margin-top: 40px; border-top: 2px solid #ccc; padding-top: 20px;">
+            <h2>🧪 Debug Zone - Test All Features</h2>
+
+            <div style="margin-bottom: 20px;">
+                <h3>🎯 Elo Algorithm Tests</h3>
+                <button id="run-elo-tests-btn">Run Elo Tests</button>
+                <button id="run-simulation-btn">Run Ranking Simulation</button>
+                <button id="run-benchmark-btn">Run Performance Benchmark</button>
+                <button id="check-integrity-btn">Check Data Integrity</button>
+                <button id="init-ratings-btn">Initialize Book Ratings</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h3>⚖️ Comparison System Tests</h3>
+                <button id="create-test-comparison-btn">Create Test Comparison</button>
+                <button id="process-comparisons-btn">Process Comparisons & Update Ratings</button>
+                <button id="view-comparison-history-btn">View Comparison History</button>
+                <button id="get-comparison-stats-btn">Get Comparison Stats</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h3>🏆 Ranking System Tests</h3>
+                <button id="calculate-ranking-btn">Calculate & Store Ranking</button>
+                <button id="view-latest-ranking-btn">View Latest Ranking</button>
+                <button id="view-ranking-history-btn">View Ranking History</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h3>📊 Google Sheets Sync Tests</h3>
+                <button id="export-spreadsheet-btn">Export Spreadsheet Data</button>
+                <button id="sync-to-sheets-btn">Sync Changes to Google Sheets</button>
+                <button id="force-sync-to-sheets-btn">Force Sync All to Google Sheets</button>
+                <button id="view-sync-status-btn">View Sync Status</button>
+                <button id="process-sync-queue-btn">Process Sync Queue</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <button id="clear-debug-btn">Clear Debug Output</button>
+            </div>
+
+            <div id="debug-status"></div>
+            <div id="debug-output" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background: #f8f9fa; padding: 15px; border: 1px solid #dee2e6; border-radius: 5px; max-height: 600px; overflow-y: auto;"></div>
+        </div>
     </div>
     <script type="module" src="app.js"></script>
 </body>

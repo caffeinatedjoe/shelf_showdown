@@ -2,7 +2,7 @@
 // Handles Google Sheets API interactions
 
 import { CONFIG } from '../config.js';
-import { addBook, getAllBooks, updateBook } from './db.js';
+import { addBook, getAllBooks, updateBook, exportForSpreadsheet } from './db.js';
 
 /**
  * Checks if the user is online.
@@ -507,4 +507,446 @@ export async function importBooksToDB(books) {
     console.log('='.repeat(50));
 
     return results;
+}
+
+// ===== GOOGLE SHEETS WRITE INTEGRATION =====
+
+/**
+ * Sync queue for offline changes
+ */
+class SyncQueue {
+    constructor() {
+        this.queue = [];
+        this.isProcessing = false;
+    }
+
+    /**
+     * Add an operation to the sync queue
+     * @param {Object} operation - Operation to queue
+     */
+    add(operation) {
+        this.queue.push({
+            ...operation,
+            id: Date.now() + Math.random(),
+            timestamp: Date.now(),
+            retries: 0
+        });
+        this.saveToStorage();
+        console.log('Added operation to sync queue:', operation.type);
+    }
+
+    /**
+     * Process the sync queue when online
+     */
+    async process() {
+        if (this.isProcessing || this.queue.length === 0 || !isOnline()) {
+            return;
+        }
+
+        this.isProcessing = true;
+        console.log(`Processing ${this.queue.length} queued operations...`);
+
+        const remainingOps = [];
+
+        for (const operation of this.queue) {
+            try {
+                await this.executeOperation(operation);
+                console.log(`✅ Processed queued operation: ${operation.type}`);
+            } catch (error) {
+                console.error(`❌ Failed to process queued operation ${operation.type}:`, error);
+
+                operation.retries++;
+                if (operation.retries < 3) {
+                    remainingOps.push(operation);
+                } else {
+                    console.error(`❌ Operation ${operation.type} failed permanently after 3 retries`);
+                }
+            }
+        }
+
+        this.queue = remainingOps;
+        this.saveToStorage();
+        this.isProcessing = false;
+
+        console.log(`Sync queue processing complete. ${this.queue.length} operations remaining.`);
+    }
+
+    /**
+     * Execute a queued operation
+     * @param {Object} operation - Operation to execute
+     */
+    async executeOperation(operation) {
+        switch (operation.type) {
+            case 'append_books':
+                await appendBooksToSheets(operation.spreadsheetId, operation.books);
+                break;
+            case 'update_book_row':
+                await updateBookInSheets(operation.spreadsheetId, operation.book, operation.rowIndex);
+                break;
+            default:
+                throw new Error(`Unknown operation type: ${operation.type}`);
+        }
+    }
+
+    /**
+     * Save queue to localStorage
+     */
+    saveToStorage() {
+        try {
+            localStorage.setItem('sheetsSyncQueue', JSON.stringify(this.queue));
+        } catch (error) {
+            console.error('Failed to save sync queue to storage:', error);
+        }
+    }
+
+    /**
+     * Load queue from localStorage
+     */
+    loadFromStorage() {
+        try {
+            const stored = localStorage.getItem('sheetsSyncQueue');
+            if (stored) {
+                this.queue = JSON.parse(stored);
+                console.log(`Loaded ${this.queue.length} operations from storage`);
+            }
+        } catch (error) {
+            console.error('Failed to load sync queue from storage:', error);
+        }
+    }
+
+    /**
+     * Get queue status
+     */
+    getStatus() {
+        return {
+            queuedOperations: this.queue.length,
+            isProcessing: this.isProcessing,
+            operations: this.queue.map(op => ({
+                type: op.type,
+                timestamp: new Date(op.timestamp),
+                retries: op.retries
+            }))
+        };
+    }
+}
+
+// Global sync queue instance
+const syncQueue = new SyncQueue();
+
+// Initialize sync queue on module load
+syncQueue.loadFromStorage();
+
+// Process queue when coming online
+window.addEventListener('online', () => {
+    setTimeout(() => syncQueue.process(), 1000); // Delay to ensure API is ready
+});
+
+/**
+ * Append new books to Google Sheets
+ * @param {string} spreadsheetId - The spreadsheet ID
+ * @param {Array<Object>} books - Array of book objects to append
+ * @returns {Promise<Object>} Results of the append operation
+ */
+export async function appendBooksToSheets(spreadsheetId, books) {
+    if (!isOnline()) {
+        // Queue for later when online
+        syncQueue.add({
+            type: 'append_books',
+            spreadsheetId,
+            books
+        });
+        return { queued: true, message: 'Operation queued for when online' };
+    }
+
+    if (!books || !Array.isArray(books) || books.length === 0) {
+        throw new Error('No books provided to append');
+    }
+
+    console.log(`Appending ${books.length} books to Google Sheets...`);
+
+    // Convert books to sheet rows
+    const rows = books.map(book => [
+        book.title || '',
+        book.author || '',
+        book.datesRead && book.datesRead.length > 0 ? book.datesRead[0] : '',
+        book.genre || '',
+        typeof book.rating === 'number' ? book.rating.toString() : ''
+    ]);
+
+    try {
+        const response = await appendSheetData(spreadsheetId, 'Sheet1', rows);
+
+        // Update books with sheet row tracking
+        const startRow = parseInt(response.updates.updatedRange.split('!')[1].split(':')[0].replace(/\D/g, ''));
+        books.forEach((book, index) => {
+            book.sheetRowIndex = startRow + index;
+        });
+
+        console.log(`Successfully appended ${books.length} books to sheets`);
+        return {
+            success: true,
+            appended: books.length,
+            updatedRange: response.updates.updatedRange
+        };
+    } catch (error) {
+        console.error('Failed to append books to sheets:', error);
+
+        // Queue for retry if it's a network error
+        if (error.message.includes('network') || error.status >= 500) {
+            syncQueue.add({
+                type: 'append_books',
+                spreadsheetId,
+                books
+            });
+            return { queued: true, message: 'Operation queued for retry' };
+        }
+
+        throw error;
+    }
+}
+
+/**
+ * Update a book in Google Sheets
+ * @param {string} spreadsheetId - The spreadsheet ID
+ * @param {Object} book - Book object to update
+ * @param {number} rowIndex - Row index in the sheet (1-based)
+ * @returns {Promise<Object>} Results of the update operation
+ */
+export async function updateBookInSheets(spreadsheetId, book, rowIndex) {
+    if (!isOnline()) {
+        syncQueue.add({
+            type: 'update_book_row',
+            spreadsheetId,
+            book,
+            rowIndex
+        });
+        return { queued: true, message: 'Operation queued for when online' };
+    }
+
+    const row = [
+        book.title || '',
+        book.author || '',
+        book.datesRead && book.datesRead.length > 0 ? book.datesRead[0] : '',
+        book.genre || '',
+        typeof book.rating === 'number' ? book.rating.toString() : ''
+    ];
+
+    const range = `Sheet1!A${rowIndex}:E${rowIndex}`;
+
+    try {
+        const response = await writeSheetData(spreadsheetId, range, [row]);
+        console.log(`Updated book "${book.title}" in sheets at row ${rowIndex}`);
+        return {
+            success: true,
+            updatedRange: response.updatedRange
+        };
+    } catch (error) {
+        console.error(`Failed to update book "${book.title}" in sheets:`, error);
+
+        // Queue for retry
+        syncQueue.add({
+            type: 'update_book_row',
+            spreadsheetId,
+            book,
+            rowIndex
+        });
+
+        return { queued: true, message: 'Operation queued for retry' };
+    }
+}
+
+/**
+ * Sync local changes to Google Sheets
+ * @param {string} spreadsheetId - The spreadsheet ID
+ * @param {boolean} forceSync - If true, sync all books regardless of sync status
+ * @returns {Promise<Object>} Sync results
+ */
+export async function syncToSheets(spreadsheetId, forceSync = false) {
+    console.log('Starting sync to Google Sheets...');
+
+    const books = await getAllBooks();
+
+    let booksToSync;
+    if (forceSync) {
+        // Force sync all books
+        booksToSync = books;
+        console.log(`Force syncing all ${books.length} books to sheets...`);
+    } else {
+        // Only sync books that need it
+        booksToSync = books.filter(book => book.needsSync || !book.sheetRowIndex);
+
+        if (booksToSync.length === 0) {
+            return { message: 'All books are already synced. Use force sync to overwrite all data.' };
+        }
+
+        console.log(`Syncing ${booksToSync.length} books that need updates...`);
+    }
+
+    // For force sync, we'll overwrite the entire sheet
+    if (forceSync) {
+        try {
+            const exportData = await exportForSpreadsheet();
+            const rows = exportData.spreadsheetData;
+
+            // Clear the sheet first (write empty data to A1:Z1000 or something)
+            await writeSheetData(spreadsheetId, 'Sheet1!A1:Z1000', []);
+
+            // Write all data at once
+            const response = await writeSheetData(spreadsheetId, 'Sheet1!A1', rows);
+
+            console.log(`Force synced ${books.length} books to sheets`);
+            return {
+                success: true,
+                forceSynced: books.length,
+                message: `Successfully force synced all ${books.length} books to Google Sheets`
+            };
+        } catch (error) {
+            console.error('Failed to force sync:', error);
+            throw error;
+        }
+    }
+
+    // Normal incremental sync
+    // Separate new books from updates
+    const newBooks = booksToSync.filter(book => !book.sheetRowIndex);
+    const booksToUpdate = booksToSync.filter(book => book.sheetRowIndex);
+
+    let results = {
+        newBooksAdded: 0,
+        booksUpdated: 0,
+        errors: 0
+    };
+
+    // Add new books
+    if (newBooks.length > 0) {
+        try {
+            const appendResult = await appendBooksToSheets(spreadsheetId, newBooks);
+            if (appendResult.success) {
+                results.newBooksAdded = newBooks.length;
+                // Mark as synced
+                for (const book of newBooks) {
+                    book.needsSync = false;
+                    await updateBook(book);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to append new books:', error);
+            results.errors++;
+        }
+    }
+
+    // Update existing books
+    for (const book of booksToUpdate) {
+        try {
+            await updateBookInSheets(spreadsheetId, book, book.sheetRowIndex);
+            book.needsSync = false;
+            await updateBook(book);
+            results.booksUpdated++;
+        } catch (error) {
+            console.error(`Failed to update book "${book.title}":`, error);
+            results.errors++;
+        }
+    }
+
+    console.log('Sync completed:', results);
+    return results;
+}
+
+/**
+ * Get sync queue status
+ * @returns {Object} Queue status
+ */
+export function getSyncStatus() {
+    return syncQueue.getStatus();
+}
+
+/**
+ * Force process sync queue
+ * @returns {Promise<void>}
+ */
+export async function processSyncQueue() {
+    await syncQueue.process();
+}
+
+/**
+ * Resolve conflicts between local and remote data
+ * @param {string} spreadsheetId - The spreadsheet ID
+ * @param {Array<Object>} localBooks - Local book data
+ * @param {Array<Array<string>>} remoteData - Remote sheet data
+ * @returns {Promise<Object>} Conflict resolution results
+ */
+export async function resolveSyncConflicts(spreadsheetId, localBooks, remoteData) {
+    console.log('Resolving sync conflicts...');
+
+    const conflicts = [];
+    const resolutions = [];
+
+    // Create maps for efficient lookup
+    const localMap = new Map(localBooks.map(book => [book.id, book]));
+    const remoteMap = new Map();
+
+    // Parse remote data (skip header)
+    for (let i = 1; i < remoteData.length; i++) {
+        const row = remoteData[i];
+        if (row && row.length >= 2) {
+            const title = row[0]?.trim() || '';
+            const author = row[1]?.trim() || '';
+            const key = `${title.toLowerCase()}|${author.toLowerCase()}`;
+
+            remoteMap.set(key, {
+                rowIndex: i + 1, // 1-based
+                title,
+                author,
+                dateRead: row[2]?.trim() || '',
+                genre: row[3]?.trim() || '',
+                rating: row[4] ? parseFloat(row[4]) : undefined
+            });
+        }
+    }
+
+    // Find conflicts
+    for (const [id, localBook] of localMap) {
+        const key = `${localBook.title.toLowerCase()}|${localBook.author.toLowerCase()}`;
+        const remoteBook = remoteMap.get(key);
+
+        if (remoteBook) {
+            // Check for conflicts
+            const localRating = localBook.rating;
+            const remoteRating = remoteBook.rating;
+
+            if (localRating !== remoteRating &&
+                !(isNaN(localRating) && isNaN(remoteRating))) {
+                conflicts.push({
+                    bookId: id,
+                    local: { rating: localRating },
+                    remote: { rating: remoteRating },
+                    rowIndex: remoteBook.rowIndex
+                });
+            }
+        }
+    }
+
+    // Auto-resolve conflicts (prefer local changes for now)
+    for (const conflict of conflicts) {
+        const localBook = localMap.get(conflict.bookId);
+        try {
+            await updateBookInSheets(spreadsheetId, localBook, conflict.rowIndex);
+            resolutions.push({
+                bookId: conflict.bookId,
+                resolution: 'local_preferred',
+                message: `Updated remote with local rating ${localBook.rating}`
+            });
+        } catch (error) {
+            resolutions.push({
+                bookId: conflict.bookId,
+                resolution: 'failed',
+                error: error.message
+            });
+        }
+    }
+
+    return {
+        totalConflicts: conflicts.length,
+        resolutions: resolutions
+    };
 }
