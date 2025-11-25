@@ -13,7 +13,6 @@ import { syncToSheets, getSyncStatus, processSyncQueue } from './modules/sheets.
 const app = {
     init: async function() {
         console.log('Initializing app...');
-        document.getElementById('auth-status').textContent = 'Checking authentication...';
 
         // Initialize offline detection
         this.setupOfflineDetection();
@@ -24,6 +23,21 @@ const app = {
             console.log('Database initialized');
         } catch (error) {
             console.error('Database initialization error:', error);
+        }
+
+        // Check if database has books (existing user) or is empty (new user)
+        try {
+            const books = await getAllBooks();
+            if (books.length > 0) {
+                console.log(`Found ${books.length} books in database - showing comparison screen`);
+                this.showComparisonScreen();
+            } else {
+                console.log('No books found - showing setup screen');
+                this.showSetupScreen();
+            }
+        } catch (error) {
+            console.error('Error checking database:', error);
+            this.showSetupScreen();
         }
 
         try {
@@ -48,9 +62,7 @@ const app = {
             console.error('Initialization error:', error);
         }
 
-        // TODO: Initialize modules and routing
         this.setupTestFunctions();
-        await this.updateAuthUI();
         this.setupEventListeners();
     },
 
@@ -260,9 +272,32 @@ const app = {
     },
 
     // View management
-    currentView: 'landing',
+    currentTab: 'compare',
 
-    switchView: function(viewName) {
+    showSetupScreen: function() {
+        document.getElementById('setup-view').style.display = 'block';
+        document.getElementById('compare-view').style.display = 'none';
+        document.getElementById('rankings-view').style.display = 'none';
+        document.getElementById('add-book-view').style.display = 'none';
+        document.getElementById('settings-view').style.display = 'none';
+        document.getElementById('tab-nav').style.display = 'none';
+        document.title = 'Shelf Showdown - Setup';
+    },
+
+    showComparisonScreen: function() {
+        document.getElementById('setup-view').style.display = 'none';
+        document.getElementById('compare-view').style.display = 'block';
+        document.getElementById('rankings-view').style.display = 'none';
+        document.getElementById('add-book-view').style.display = 'none';
+        document.getElementById('settings-view').style.display = 'none';
+        document.getElementById('tab-nav').style.display = 'flex';
+        this.currentTab = 'compare';
+        this.updateTabNavigation();
+        document.title = 'Shelf Showdown - Compare';
+        this.loadComparisonView();
+    },
+
+    switchTab: function(tabName) {
         // Hide all views
         const views = document.querySelectorAll('.view');
         views.forEach(view => {
@@ -270,36 +305,63 @@ const app = {
             view.style.display = 'none';
         });
 
-        // Remove active class from nav buttons
-        const navBtns = document.querySelectorAll('.nav-btn');
-        navBtns.forEach(btn => btn.classList.remove('active'));
+        // Remove active class from tab buttons
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => btn.classList.remove('active'));
 
         // Show selected view
-        const targetView = document.getElementById(viewName + '-view');
+        const targetView = document.getElementById(tabName + '-view');
         if (targetView) {
             targetView.classList.add('active');
             targetView.style.display = 'block';
         }
 
-        // Activate nav button
-        const targetNav = document.getElementById('nav-' + viewName);
-        if (targetNav) {
-            targetNav.classList.add('active');
+        // Activate tab button
+        const targetTab = document.getElementById('tab-' + tabName);
+        if (targetTab) {
+            targetTab.classList.add('active');
         }
 
-        this.currentView = viewName;
+        this.currentTab = tabName;
 
         // Update page title for accessibility
         const titles = {
-            landing: 'Shelf Showdown - Home',
-            books: 'Shelf Showdown - Your Books',
-            compare: 'Shelf Showdown - Compare Books',
-            results: 'Shelf Showdown - Rankings'
+            compare: 'Shelf Showdown - Compare',
+            rankings: 'Shelf Showdown - Rankings',
+            'add-book': 'Shelf Showdown - Add Book',
+            settings: 'Shelf Showdown - Settings'
         };
-        document.title = titles[viewName] || 'Shelf Showdown';
+        document.title = titles[tabName] || 'Shelf Showdown';
 
-        // Load data for the view
-        this.loadViewData(viewName);
+        // Load data for the tab
+        this.loadTabData(tabName);
+    },
+
+    updateTabNavigation: function() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => btn.classList.remove('active'));
+
+        const activeTab = document.getElementById('tab-' + this.currentTab);
+        if (activeTab) {
+            activeTab.classList.add('active');
+        }
+    },
+
+    loadTabData: function(tabName) {
+        switch (tabName) {
+            case 'compare':
+                this.loadComparisonView();
+                break;
+            case 'rankings':
+                this.loadRankingsView();
+                break;
+            case 'add-book':
+                // Form is ready, no data loading needed
+                break;
+            case 'settings':
+                // Settings are static, no data loading needed
+                break;
+        }
     },
 
     loadViewData: function(viewName) {
@@ -317,40 +379,69 @@ const app = {
     },
 
     setupEventListeners: function() {
-        // Navigation event listeners
-        document.getElementById('nav-landing').addEventListener('click', () => this.switchView('landing'));
-        document.getElementById('nav-books').addEventListener('click', () => this.switchView('books'));
-        document.getElementById('nav-compare').addEventListener('click', () => this.switchView('compare'));
-        document.getElementById('nav-results').addEventListener('click', () => this.switchView('results'));
+        // Tab navigation event listeners
+        document.getElementById('tab-compare').addEventListener('click', () => this.switchTab('compare'));
+        document.getElementById('tab-rankings').addEventListener('click', () => this.switchTab('rankings'));
+        document.getElementById('tab-add-book').addEventListener('click', () => this.switchTab('add-book'));
+        document.getElementById('tab-settings').addEventListener('click', () => this.switchTab('settings'));
 
-        document.getElementById('login-btn').addEventListener('click', async () => {
-            if (!navigator.onLine) {
-                alert('Cannot authenticate while offline. Please check your internet connection.');
-                return;
-            }
-
-            try {
-                await authenticate();
-                // Initialize Sheets API after authentication
-                try {
-                    await initSheetsAPI();
-                    console.log('Sheets API initialized after login');
-                } catch (sheetsError) {
-                    console.error('Sheets API initialization error:', sheetsError);
+        // Setup screen event listeners
+        const connectBtn = document.getElementById('connect-google-btn');
+        if (connectBtn) {
+            connectBtn.addEventListener('click', async () => {
+                if (!navigator.onLine) {
+                    alert('Cannot authenticate while offline. Please check your internet connection.');
+                    return;
                 }
-                await this.updateAuthUI();
-            } catch (error) {
-                console.error('Login failed:', error);
-                alert('Login failed: ' + error.message);
-            }
-        });
 
-        document.getElementById('logout-btn').addEventListener('click', async () => {
-            await signOut();
-            await this.updateAuthUI();
-        });
+                const statusDiv = document.getElementById('setup-status');
+                statusDiv.textContent = 'Connecting to Google...';
+                statusDiv.style.color = 'black';
 
-        document.getElementById('test-connection-btn').addEventListener('click', async () => {
+                try {
+                    await authenticate();
+                    // Initialize Sheets API after authentication
+                    try {
+                        await initSheetsAPI();
+                        console.log('Sheets API initialized after login');
+                    } catch (sheetsError) {
+                        console.error('Sheets API initialization error:', sheetsError);
+                    }
+
+                    // Now import books from Google Sheets
+                    statusDiv.textContent = 'Importing your books...';
+                    try {
+                        // For now, we'll create a simple setup - in a real app you'd prompt for spreadsheet ID
+                        // For demo purposes, let's add some test data
+                        console.log('Inserting test data...');
+                        const testDataResult = await insertTestData();
+                        console.log('Test data inserted:', testDataResult);
+
+                        // Verify books were added
+                        const booksAfter = await getAllBooks();
+                        console.log('Books in database after setup:', booksAfter.length);
+
+                        statusDiv.textContent = 'Setup complete! Starting comparisons...';
+                        statusDiv.style.color = 'green';
+                        setTimeout(() => this.showComparisonScreen(), 1000);
+                    } catch (importError) {
+                        console.error('Import error:', importError);
+                        statusDiv.textContent = 'Setup complete! You can add books manually.';
+                        statusDiv.style.color = 'orange';
+                        setTimeout(() => this.showComparisonScreen(), 2000);
+                    }
+
+                } catch (error) {
+                    console.error('Setup failed:', error);
+                    statusDiv.textContent = 'Setup failed: ' + error.message;
+                    statusDiv.style.color = 'red';
+                }
+            });
+        }
+
+        const testConnectionBtn = document.getElementById('test-connection-btn');
+        if (testConnectionBtn) {
+            testConnectionBtn.addEventListener('click', async () => {
             const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
             const statusDiv = document.getElementById('sheets-status');
 
@@ -374,185 +465,200 @@ const app = {
                 statusDiv.style.color = 'red';
             }
         });
+        }
 
-        document.getElementById('load-data-btn').addEventListener('click', async () => {
-            const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
-            const statusDiv = document.getElementById('sheets-status');
-            const dataDisplay = document.getElementById('sheet-data-display');
+        const loadDataBtn = document.getElementById('load-data-btn');
+        if (loadDataBtn) {
+            loadDataBtn.addEventListener('click', async () => {
+                const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
+                const statusDiv = document.getElementById('sheets-status');
+                const dataDisplay = document.getElementById('sheet-data-display');
 
-            if (!spreadsheetId) {
-                statusDiv.textContent = 'Please enter a spreadsheet ID';
-                statusDiv.style.color = 'red';
-                return;
-            }
-
-            statusDiv.textContent = 'Loading sheet data...';
-            statusDiv.style.color = 'black';
-            dataDisplay.textContent = '';
-
-            try {
-                const data = await readSheetData(spreadsheetId);
-                statusDiv.textContent = `Data loaded successfully! ${data.length} rows found.`;
-                statusDiv.style.color = 'green';
-
-                // Display the data in a readable format
-                if (data.length === 0) {
-                    dataDisplay.textContent = 'No data found in the sheet.';
-                } else {
-                    let displayText = `Sheet contains ${data.length} rows:\n\n`;
-                    data.forEach((row, index) => {
-                        displayText += `Row ${index + 1}: ${JSON.stringify(row)}\n`;
-                    });
-                    dataDisplay.textContent = displayText;
-                }
-
-                console.log('Sheet data loaded:', data);
-            } catch (error) {
-                console.error('Data loading failed:', error);
-                statusDiv.textContent = `Data loading failed: ${error.message}`;
-                statusDiv.style.color = 'red';
-                dataDisplay.textContent = '';
-            }
-        });
-
-        document.getElementById('parse-books-btn').addEventListener('click', async () => {
-            const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
-            const statusDiv = document.getElementById('sheets-status');
-            const dataDisplay = document.getElementById('sheet-data-display');
-
-            if (!spreadsheetId) {
-                statusDiv.textContent = 'Please enter a spreadsheet ID';
-                statusDiv.style.color = 'red';
-                return;
-            }
-
-            statusDiv.textContent = 'Parsing books from sheet data...';
-            statusDiv.style.color = 'black';
-            dataDisplay.textContent = '';
-
-            try {
-                const sheetData = await readSheetData(spreadsheetId);
-                const books = await parseSheetDataToBooks(sheetData);
-
-                statusDiv.textContent = `Successfully parsed ${books.length} books from sheet data.`;
-                statusDiv.style.color = 'green';
-
-                // Display the parsed books
-                if (books.length === 0) {
-                    dataDisplay.textContent = 'No valid books found in the sheet.';
-                } else {
-                    let displayText = `Parsed ${books.length} books:\n\n`;
-                    books.forEach((book, index) => {
-                        displayText += `Book ${index + 1}: ${JSON.stringify(book, null, 2)}\n\n`;
-                    });
-                    dataDisplay.textContent = displayText;
-                }
-
-                console.log('Parsed books:', books);
-            } catch (error) {
-                console.error('Book parsing failed:', error);
-                statusDiv.textContent = `Book parsing failed: ${error.message}`;
-                statusDiv.style.color = 'red';
-                dataDisplay.textContent = '';
-            }
-        });
-
-        document.getElementById('view-db-btn').addEventListener('click', async () => {
-            const statusDiv = document.getElementById('sheets-status');
-            const dataDisplay = document.getElementById('sheet-data-display');
-
-            statusDiv.textContent = 'Loading database contents...';
-            statusDiv.style.color = 'black';
-            dataDisplay.textContent = '';
-
-            try {
-                const books = await getAllBooks();
-                statusDiv.textContent = `Database contains ${books.length} books`;
-                statusDiv.style.color = 'blue';
-
-                if (books.length === 0) {
-                    dataDisplay.textContent = 'No books in database.';
-                } else {
-                    dataDisplay.textContent = `Database Contents (${books.length} books):\n\n`;
-                    books.forEach((book, index) => {
-                        dataDisplay.textContent += `${index + 1}. "${book.title}" by ${book.author}\n`;
-                        dataDisplay.textContent += `   ID: ${book.id}\n`;
-                        dataDisplay.textContent += `   Read dates: ${book.datesRead.join(', ') || 'None'}\n\n`;
-                    });
-                }
-
-                console.log('Current database contents:', books);
-            } catch (error) {
-                console.error('Error loading database:', error);
-                statusDiv.textContent = `Database error: ${error.message}`;
-                statusDiv.style.color = 'red';
-                dataDisplay.textContent = '';
-            }
-        });
-
-        document.getElementById('insert-test-data-btn').addEventListener('click', async () => {
-            const statusDiv = document.getElementById('sheets-status');
-            const dataDisplay = document.getElementById('sheet-data-display');
-
-            statusDiv.textContent = 'Inserting test data...';
-            statusDiv.style.color = 'black';
-            dataDisplay.textContent = '';
-
-            try {
-                const results = await insertTestData();
-                statusDiv.textContent = `Test data inserted! ${results.inserted} books added, ${results.skipped} skipped.`;
-                statusDiv.style.color = 'green';
-
-                // Show the inserted data
-                const books = await getAllBooks();
-                dataDisplay.textContent = `Test data inserted successfully!\n\nDatabase now contains ${books.length} books:\n\n`;
-                books.slice(-5).forEach(book => { // Show last 5 books (the test data)
-                    dataDisplay.textContent += `• "${book.title}" by ${book.author} (${book.datesRead.length} reads)\n`;
-                });
-
-                console.log('Test data insertion completed:', results);
-            } catch (error) {
-                console.error('Test data insertion failed:', error);
-                statusDiv.textContent = `Test data insertion failed: ${error.message}`;
-                statusDiv.style.color = 'red';
-                dataDisplay.textContent = '';
-            }
-        });
-
-        document.getElementById('import-books-btn').addEventListener('click', async () => {
-            const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
-            const statusDiv = document.getElementById('sheets-status');
-            const dataDisplay = document.getElementById('sheet-data-display');
-
-            if (!spreadsheetId) {
-                statusDiv.textContent = 'Please enter a spreadsheet ID';
-                statusDiv.style.color = 'red';
-                return;
-            }
-
-            statusDiv.textContent = 'Importing books to database...';
-            statusDiv.style.color = 'black';
-            dataDisplay.textContent = '';
-
-            try {
-                // First read and parse the sheet data
-                const sheetData = await readSheetData(spreadsheetId);
-                const books = await parseSheetDataToBooks(sheetData);
-
-                if (books.length === 0) {
-                    statusDiv.textContent = 'No books found to import';
-                    statusDiv.style.color = 'orange';
+                if (!spreadsheetId) {
+                    statusDiv.textContent = 'Please enter a spreadsheet ID';
+                    statusDiv.style.color = 'red';
                     return;
                 }
 
-                // Import books to IndexedDB
-                const importResults = await importBooksToDB(books);
+                statusDiv.textContent = 'Loading sheet data...';
+                statusDiv.style.color = 'black';
+                dataDisplay.textContent = '';
 
-                statusDiv.textContent = `Import completed! ${importResults.success} books processed (${importResults.added} added, ${importResults.updated} updated)`;
-                statusDiv.style.color = 'green';
+                try {
+                    const data = await readSheetData(spreadsheetId);
+                    statusDiv.textContent = `Data loaded successfully! ${data.length} rows found.`;
+                    statusDiv.style.color = 'green';
 
-                // Display import summary
-                dataDisplay.textContent = `Import Summary:
+                    // Display the data in a readable format
+                    if (data.length === 0) {
+                        dataDisplay.textContent = 'No data found in the sheet.';
+                    } else {
+                        let displayText = `Sheet contains ${data.length} rows:\n\n`;
+                        data.forEach((row, index) => {
+                            displayText += `Row ${index + 1}: ${JSON.stringify(row)}\n`;
+                        });
+                        dataDisplay.textContent = displayText;
+                    }
+
+                    console.log('Sheet data loaded:', data);
+                } catch (error) {
+                    console.error('Data loading failed:', error);
+                    statusDiv.textContent = `Data loading failed: ${error.message}`;
+                    statusDiv.style.color = 'red';
+                    dataDisplay.textContent = '';
+                }
+            });
+        }
+
+        const parseBooksBtn = document.getElementById('parse-books-btn');
+        if (parseBooksBtn) {
+            parseBooksBtn.addEventListener('click', async () => {
+                const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
+                const statusDiv = document.getElementById('sheets-status');
+                const dataDisplay = document.getElementById('sheet-data-display');
+
+                if (!spreadsheetId) {
+                    statusDiv.textContent = 'Please enter a spreadsheet ID';
+                    statusDiv.style.color = 'red';
+                    return;
+                }
+
+                statusDiv.textContent = 'Parsing books from sheet data...';
+                statusDiv.style.color = 'black';
+                dataDisplay.textContent = '';
+
+                try {
+                    const sheetData = await readSheetData(spreadsheetId);
+                    const books = await parseSheetDataToBooks(sheetData);
+
+                    statusDiv.textContent = `Successfully parsed ${books.length} books from sheet data.`;
+                    statusDiv.style.color = 'green';
+
+                    // Display the parsed books
+                    if (books.length === 0) {
+                        dataDisplay.textContent = 'No valid books found in the sheet.';
+                    } else {
+                        let displayText = `Parsed ${books.length} books:\n\n`;
+                        books.forEach((book, index) => {
+                            displayText += `Book ${index + 1}: ${JSON.stringify(book, null, 2)}\n\n`;
+                        });
+                        dataDisplay.textContent = displayText;
+                    }
+
+                    console.log('Parsed books:', books);
+                } catch (error) {
+                    console.error('Book parsing failed:', error);
+                    statusDiv.textContent = `Book parsing failed: ${error.message}`;
+                    statusDiv.style.color = 'red';
+                    dataDisplay.textContent = '';
+                }
+            });
+        }
+
+        const viewDbBtn = document.getElementById('view-db-btn');
+        if (viewDbBtn) {
+            viewDbBtn.addEventListener('click', async () => {
+                const statusDiv = document.getElementById('sheets-status');
+                const dataDisplay = document.getElementById('sheet-data-display');
+
+                statusDiv.textContent = 'Loading database contents...';
+                statusDiv.style.color = 'black';
+                dataDisplay.textContent = '';
+
+                try {
+                    const books = await getAllBooks();
+                    statusDiv.textContent = `Database contains ${books.length} books`;
+                    statusDiv.style.color = 'blue';
+
+                    if (books.length === 0) {
+                        dataDisplay.textContent = 'No books in database.';
+                    } else {
+                        dataDisplay.textContent = `Database Contents (${books.length} books):\n\n`;
+                        books.forEach((book, index) => {
+                            dataDisplay.textContent += `${index + 1}. "${book.title}" by ${book.author}\n`;
+                            dataDisplay.textContent += `   ID: ${book.id}\n`;
+                            dataDisplay.textContent += `   Read dates: ${book.datesRead.join(', ') || 'None'}\n\n`;
+                        });
+                    }
+
+                    console.log('Current database contents:', books);
+                } catch (error) {
+                    console.error('Error loading database:', error);
+                    statusDiv.textContent = `Database error: ${error.message}`;
+                    statusDiv.style.color = 'red';
+                    dataDisplay.textContent = '';
+                }
+            });
+        }
+
+        const insertTestDataBtn = document.getElementById('insert-test-data-btn');
+        if (insertTestDataBtn) {
+            insertTestDataBtn.addEventListener('click', async () => {
+                const statusDiv = document.getElementById('sheets-status');
+                const dataDisplay = document.getElementById('sheet-data-display');
+
+                statusDiv.textContent = 'Inserting test data...';
+                statusDiv.style.color = 'black';
+                dataDisplay.textContent = '';
+
+                try {
+                    const results = await insertTestData();
+                    statusDiv.textContent = `Test data inserted! ${results.inserted} books added, ${results.skipped} skipped.`;
+                    statusDiv.style.color = 'green';
+
+                    // Show the inserted data
+                    const books = await getAllBooks();
+                    dataDisplay.textContent = `Test data inserted successfully!\n\nDatabase now contains ${books.length} books:\n\n`;
+                    books.slice(-5).forEach(book => { // Show last 5 books (the test data)
+                        dataDisplay.textContent += `• "${book.title}" by ${book.author} (${book.datesRead.length} reads)\n`;
+                    });
+
+                    console.log('Test data insertion completed:', results);
+                } catch (error) {
+                    console.error('Test data insertion failed:', error);
+                    statusDiv.textContent = `Test data insertion failed: ${error.message}`;
+                    statusDiv.style.color = 'red';
+                    dataDisplay.textContent = '';
+                }
+            });
+        }
+
+        const importBooksBtn = document.getElementById('import-books-btn');
+        if (importBooksBtn) {
+            importBooksBtn.addEventListener('click', async () => {
+                const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
+                const statusDiv = document.getElementById('sheets-status');
+                const dataDisplay = document.getElementById('sheet-data-display');
+
+                if (!spreadsheetId) {
+                    statusDiv.textContent = 'Please enter a spreadsheet ID';
+                    statusDiv.style.color = 'red';
+                    return;
+                }
+
+                statusDiv.textContent = 'Importing books to database...';
+                statusDiv.style.color = 'black';
+                dataDisplay.textContent = '';
+
+                try {
+                    // First read and parse the sheet data
+                    const sheetData = await readSheetData(spreadsheetId);
+                    const books = await parseSheetDataToBooks(sheetData);
+
+                    if (books.length === 0) {
+                        statusDiv.textContent = 'No books found to import';
+                        statusDiv.style.color = 'orange';
+                        return;
+                    }
+
+                    // Import books to IndexedDB
+                    const importResults = await importBooksToDB(books);
+
+                    statusDiv.textContent = `Import completed! ${importResults.success} books processed (${importResults.added} added, ${importResults.updated} updated)`;
+                    statusDiv.style.color = 'green';
+
+                    // Display import summary
+                    dataDisplay.textContent = `Import Summary:
 - Total books processed: ${importResults.total}
 - New books added: ${importResults.added}
 - Existing books updated: ${importResults.updated}
@@ -560,73 +666,77 @@ const app = {
 
 Books in database after import:`;
 
-                // Show current database contents
-                const allBooks = await getAllBooks();
-                dataDisplay.textContent += `\n\nTotal books in DB: ${allBooks.length}`;
-                allBooks.slice(0, 5).forEach(book => {
-                    dataDisplay.textContent += `\n- ${book.title} by ${book.author} (${book.datesRead.length} reads)`;
-                });
-                if (allBooks.length > 5) {
-                    dataDisplay.textContent += `\n... and ${allBooks.length - 5} more`;
+                    // Show current database contents
+                    const allBooks = await getAllBooks();
+                    dataDisplay.textContent += `\n\nTotal books in DB: ${allBooks.length}`;
+                    allBooks.slice(0, 5).forEach(book => {
+                        dataDisplay.textContent += `\n- ${book.title} by ${book.author} (${book.datesRead.length} reads)`;
+                    });
+                    if (allBooks.length > 5) {
+                        dataDisplay.textContent += `\n... and ${allBooks.length - 5} more`;
+                    }
+
+                    console.log('Import completed successfully:', importResults);
+                } catch (error) {
+                    console.error('Import failed:', error);
+                    statusDiv.textContent = `Import failed: ${error.message}`;
+                    statusDiv.style.color = 'red';
+                    dataDisplay.textContent = '';
+                }
+            });
+        }
+
+        const appendTestDataBtn = document.getElementById('append-test-data-btn');
+        if (appendTestDataBtn) {
+            appendTestDataBtn.addEventListener('click', async () => {
+                const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
+                const statusDiv = document.getElementById('sheets-status');
+
+                if (!spreadsheetId) {
+                    statusDiv.textContent = 'Please enter a spreadsheet ID';
+                    statusDiv.style.color = 'red';
+                    return;
                 }
 
-                console.log('Import completed successfully:', importResults);
-            } catch (error) {
-                console.error('Import failed:', error);
-                statusDiv.textContent = `Import failed: ${error.message}`;
-                statusDiv.style.color = 'red';
-                dataDisplay.textContent = '';
-            }
-        });
+                statusDiv.textContent = 'Appending test data...';
+                statusDiv.style.color = 'black';
 
-        document.getElementById('append-test-data-btn').addEventListener('click', async () => {
-            const spreadsheetId = document.getElementById('spreadsheet-id').value.trim();
-            const statusDiv = document.getElementById('sheets-status');
+                try {
+                    // Generate a timestamp for unique test data
+                    const timestamp = new Date().toLocaleString();
+                    const testData = [
+                        [`Test Entry ${Date.now()}`, timestamp, 'Write Test']
+                    ];
 
-            if (!spreadsheetId) {
-                statusDiv.textContent = 'Please enter a spreadsheet ID';
-                statusDiv.style.color = 'red';
-                return;
-            }
+                    const response = await appendSheetData(spreadsheetId, 'Sheet1', testData);
+                    statusDiv.textContent = `Test data appended successfully! Updated range: ${response.updates.updatedRange}`;
+                    statusDiv.style.color = 'green';
+                    console.log('Append response:', response);
 
-            statusDiv.textContent = 'Appending test data...';
-            statusDiv.style.color = 'black';
-
-            try {
-                // Generate a timestamp for unique test data
-                const timestamp = new Date().toLocaleString();
-                const testData = [
-                    [`Test Entry ${Date.now()}`, timestamp, 'Write Test']
-                ];
-
-                const response = await appendSheetData(spreadsheetId, 'Sheet1', testData);
-                statusDiv.textContent = `Test data appended successfully! Updated range: ${response.updates.updatedRange}`;
-                statusDiv.style.color = 'green';
-                console.log('Append response:', response);
-
-                // Optionally reload the data to show the new entry
-                setTimeout(async () => {
-                    try {
-                        const updatedData = await readSheetData(spreadsheetId);
-                        const dataDisplay = document.getElementById('sheet-data-display');
-                        if (updatedData.length > 0) {
-                            let displayText = `Sheet contains ${updatedData.length} rows (after append):\n\n`;
-                            updatedData.forEach((row, index) => {
-                                displayText += `Row ${index + 1}: ${JSON.stringify(row)}\n`;
-                            });
-                            dataDisplay.textContent = displayText;
+                    // Optionally reload the data to show the new entry
+                    setTimeout(async () => {
+                        try {
+                            const updatedData = await readSheetData(spreadsheetId);
+                            const dataDisplay = document.getElementById('sheet-data-display');
+                            if (updatedData.length > 0) {
+                                let displayText = `Sheet contains ${updatedData.length} rows (after append):\n\n`;
+                                updatedData.forEach((row, index) => {
+                                    displayText += `Row ${index + 1}: ${JSON.stringify(row)}\n`;
+                                });
+                                dataDisplay.textContent = displayText;
+                            }
+                        } catch (reloadError) {
+                            console.error('Error reloading data:', reloadError);
                         }
-                    } catch (reloadError) {
-                        console.error('Error reloading data:', reloadError);
-                    }
-                }, 1000);
+                    }, 1000);
 
-            } catch (error) {
-                console.error('Append test failed:', error);
-                statusDiv.textContent = `Append failed: ${error.message}`;
-                statusDiv.style.color = 'red';
-            }
-        });
+                } catch (error) {
+                    console.error('Append test failed:', error);
+                    statusDiv.textContent = `Append failed: ${error.message}`;
+                    statusDiv.style.color = 'red';
+                }
+            });
+        }
 
         // Debug zone event listeners
         document.getElementById('run-elo-tests-btn').addEventListener('click', async () => {
@@ -1246,21 +1356,88 @@ Message: ${results.message || 'Force sync completed successfully'}
             document.getElementById('debug-output').textContent = '';
         });
 
-        // Books view event listeners
-        document.getElementById('add-book-btn').addEventListener('click', () => this.showAddBookForm());
-        document.getElementById('refresh-books-btn').addEventListener('click', () => this.loadBooks());
-        document.getElementById('cancel-add-book').addEventListener('click', () => this.hideAddBookForm());
-        document.getElementById('book-form').addEventListener('submit', (e) => this.handleAddBook(e));
+        // Add Book tab event listeners
+        const addBookForm = document.getElementById('add-book-form');
+        if (addBookForm) {
+            addBookForm.addEventListener('submit', (e) => this.handleAddBook(e));
+        }
+
+        const cancelAddBookBtn = document.getElementById('cancel-add-book');
+        if (cancelAddBookBtn) {
+            cancelAddBookBtn.addEventListener('click', () => this.clearAddBookForm());
+        }
+
+        // Rankings tab event listeners
+        document.getElementById('sort-options').addEventListener('change', (e) => this.sortRankings(e.target.value));
+        document.getElementById('export-ranking-btn').addEventListener('click', () => this.exportRanking());
+
+        // Settings tab event listeners
+        document.getElementById('reconnect-google-btn').addEventListener('click', async () => {
+            if (!navigator.onLine) {
+                alert('Cannot authenticate while offline. Please check your internet connection.');
+                return;
+            }
+
+            const statusDiv = document.getElementById('settings-status');
+            statusDiv.textContent = 'Reconnecting to Google...';
+            statusDiv.style.color = 'black';
+
+            try {
+                await authenticate();
+                await initSheetsAPI();
+                statusDiv.textContent = 'Reconnected successfully!';
+                statusDiv.style.color = 'green';
+            } catch (error) {
+                statusDiv.textContent = 'Reconnection failed: ' + error.message;
+                statusDiv.style.color = 'red';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await signOut();
+            const statusDiv = document.getElementById('settings-status');
+            statusDiv.textContent = 'Logged out successfully!';
+            statusDiv.style.color = 'green';
+        });
+
+        document.getElementById('purge-database-btn').addEventListener('click', async () => {
+            console.log('Purge database button clicked');
+            if (!confirm('This will permanently delete ALL your books and rankings. This action cannot be undone. Continue?')) {
+                console.log('Purge cancelled by user');
+                return;
+            }
+            console.log('Purge confirmed by user');
+
+            const statusDiv = document.getElementById('settings-status');
+            statusDiv.textContent = 'Purging database...';
+            statusDiv.style.color = 'black';
+
+            try {
+                console.log('Fetching all books...');
+                const books = await getAllBooks();
+                console.log(`Found ${books.length} books to delete`);
+                for (const book of books) {
+                    console.log(`Deleting book: ${book.title} (ID: ${book.id})`);
+                    await deleteBook(book.id);
+                }
+                console.log('All books deleted successfully');
+                statusDiv.textContent = 'Database purged! Redirecting to setup...';
+                statusDiv.style.color = 'orange';
+                setTimeout(() => {
+                    console.log('Redirecting to setup screen');
+                    this.showSetupScreen();
+                }, 1000);
+            } catch (error) {
+                console.error('Purge failed:', error);
+                statusDiv.textContent = 'Purge failed: ' + error.message;
+                statusDiv.style.color = 'red';
+            }
+        });
 
         // Comparison view event listeners
-        document.getElementById('choose-a-btn').addEventListener('click', () => this.handleComparisonChoice('A'));
-        document.getElementById('choose-b-btn').addEventListener('click', () => this.handleComparisonChoice('B'));
         document.getElementById('skip-comparison-btn').addEventListener('click', () => this.showNextComparison());
+        document.getElementById('undo-comparison-btn').addEventListener('click', () => this.undoLastComparison());
 
-        // Results view event listeners
-        document.getElementById('calculate-ranking-btn').addEventListener('click', () => this.loadResultsView());
-        document.getElementById('export-ranking-btn').addEventListener('click', () => this.exportRanking());
-        document.getElementById('sort-options').addEventListener('change', (e) => this.sortRankings(e.target.value));
     },
 
     // Books management
@@ -1319,16 +1496,10 @@ Message: ${results.message || 'Force sync completed successfully'}
         return item;
     },
 
-    showAddBookForm: function() {
-        const form = document.getElementById('add-book-form');
-        form.style.display = 'block';
-        document.getElementById('book-title').focus();
-    },
-
-    hideAddBookForm: function() {
-        const form = document.getElementById('add-book-form');
-        form.style.display = 'none';
-        document.getElementById('book-form').reset();
+    clearAddBookForm: function() {
+        document.getElementById('add-book-form').reset();
+        const statusDiv = document.getElementById('add-book-status');
+        statusDiv.textContent = '';
     },
 
     handleAddBook: async function(e) {
@@ -1337,18 +1508,27 @@ Message: ${results.message || 'Force sync completed successfully'}
         const title = document.getElementById('book-title').value.trim();
         const author = document.getElementById('book-author').value.trim();
         const genre = document.getElementById('book-genre').value.trim();
+        const reads = parseInt(document.getElementById('book-reads').value) || 0;
+        const dateRead = document.getElementById('book-date-read').value;
 
         if (!title || !author) {
-            alert('Title and author are required');
+            const statusDiv = document.getElementById('add-book-status');
+            statusDiv.textContent = 'Title and author are required';
+            statusDiv.style.color = 'red';
             return;
         }
+
+        const statusDiv = document.getElementById('add-book-status');
+        statusDiv.textContent = 'Adding book...';
+        statusDiv.style.color = 'black';
 
         try {
             const newBook = {
                 title,
                 author,
                 genre: genre || null,
-                datesRead: [],
+                datesRead: dateRead ? [dateRead] : [],
+                timesRead: reads,
                 rating: null
             };
 
@@ -1359,13 +1539,17 @@ Message: ${results.message || 'Force sync completed successfully'}
                 throw new Error('Failed to add book');
             }
 
-            this.hideAddBookForm();
-            this.loadBooks(); // Refresh the list
+            statusDiv.textContent = 'Book added successfully!';
+            statusDiv.style.color = 'green';
+            this.clearAddBookForm();
 
-            alert('Book added successfully!');
+            // Switch back to comparison tab after a short delay
+            setTimeout(() => this.switchTab('compare'), 1500);
+
         } catch (error) {
             console.error('Error adding book:', error);
-            alert('Error adding book: ' + error.message);
+            statusDiv.textContent = 'Error adding book: ' + error.message;
+            statusDiv.style.color = 'red';
         }
     },
 
@@ -1399,6 +1583,8 @@ Message: ${results.message || 'Force sync completed successfully'}
     loadComparisonView: async function() {
         try {
             const books = await getAllBooks();
+            console.log('Loading comparison view with', books.length, 'books');
+
             if (books.length < 2) {
                 document.getElementById('comparison-container').innerHTML = '<p>You need at least 2 books to start comparing. Add more books first!</p>';
                 return;
@@ -1407,7 +1593,25 @@ Message: ${results.message || 'Force sync completed successfully'}
             this.comparisonBooks = books;
             this.currentComparison = null;
             this.updateComparisonProgress();
+            console.log('Calling showNextComparison...');
             this.showNextComparison();
+
+            // Attach event listeners after the view is loaded
+            console.log('Attaching book card event listeners');
+            const bookAEl = document.getElementById('book-a');
+            const bookBEl = document.getElementById('book-b');
+            if (bookAEl) {
+                bookAEl.addEventListener('click', (e) => this.handleBookCardClick(e, 'A'));
+                console.log('Event listener attached to book-a');
+            } else {
+                console.error('book-a element not found in loadComparisonView');
+            }
+            if (bookBEl) {
+                bookBEl.addEventListener('click', (e) => this.handleBookCardClick(e, 'B'));
+                console.log('Event listener attached to book-b');
+            } else {
+                console.error('book-b element not found in loadComparisonView');
+            }
         } catch (error) {
             console.error('Error loading comparison view:', error);
             alert('Error loading comparison view: ' + error.message);
@@ -1415,26 +1619,44 @@ Message: ${results.message || 'Force sync completed successfully'}
     },
 
     showNextComparison: function() {
+        console.log('showNextComparison called, comparisonBooks:', this.comparisonBooks?.length || 0);
+
+        if (!this.comparisonBooks || this.comparisonBooks.length < 2) {
+            console.error('Not enough books for comparison');
+            document.getElementById('comparison-container').innerHTML = '<p>Not enough books for comparison. Please add more books.</p>';
+            return;
+        }
+
         // Simple random pair selection for now
         const availableBooks = this.comparisonBooks.filter(book => book.rating !== undefined && book.rating !== null);
+        console.log('Available rated books:', availableBooks.length, 'total books:', this.comparisonBooks.length);
+
+        let bookA, bookB;
 
         if (availableBooks.length < 2) {
             // If not enough rated books, pick any two
-            const bookA = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
-            let bookB = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
-            while (bookB.id === bookA.id) {
-                bookB = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
-            }
-            this.displayComparison(bookA, bookB);
+            console.log('Using unrated books for comparison');
+            bookA = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
+            bookB = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
         } else {
             // Pick from rated books
-            const bookA = availableBooks[Math.floor(Math.random() * availableBooks.length)];
-            let bookB = availableBooks[Math.floor(Math.random() * availableBooks.length)];
-            while (bookB.id === bookA.id) {
+            console.log('Using rated books for comparison');
+            bookA = availableBooks[Math.floor(Math.random() * availableBooks.length)];
+            bookB = availableBooks[Math.floor(Math.random() * availableBooks.length)];
+        }
+
+        // Ensure they're different books
+        while (bookB.id === bookA.id) {
+            if (availableBooks.length < 2) {
+                bookB = this.comparisonBooks[Math.floor(Math.random() * this.comparisonBooks.length)];
+            } else {
                 bookB = availableBooks[Math.floor(Math.random() * availableBooks.length)];
             }
-            this.displayComparison(bookA, bookB);
         }
+
+        console.log('Displaying comparison:', bookA.title, 'vs', bookB.title);
+        this.displayComparison(bookA, bookB);
+        console.log('Comparison displayed successfully');
     },
 
     displayComparison: function(bookA, bookB) {
@@ -1443,16 +1665,23 @@ Message: ${results.message || 'Force sync completed successfully'}
         const bookAEl = document.getElementById('book-a');
         const bookBEl = document.getElementById('book-b');
 
+        const bookAReads = bookA.timesRead || bookA.datesRead?.length || 0;
+        const bookBReads = bookB.timesRead || bookB.datesRead?.length || 0;
+
         bookAEl.innerHTML = `
             <h3>${this.escapeHtml(bookA.title)}</h3>
             <p>by ${this.escapeHtml(bookA.author)}</p>
-            ${bookA.rating ? `<p>Rating: ${bookA.rating.toFixed(1)}</p>` : '<p>Unrated</p>'}
+            ${bookA.genre ? `<p>${this.escapeHtml(bookA.genre)}</p>` : ''}
+            <p>Read ${bookAReads} time${bookAReads !== 1 ? 's' : ''}</p>
+            ${bookA.rating ? `<p>Score: ${bookA.rating.toFixed(1)}</p>` : '<p>Unrated</p>'}
         `;
 
         bookBEl.innerHTML = `
             <h3>${this.escapeHtml(bookB.title)}</h3>
             <p>by ${this.escapeHtml(bookB.author)}</p>
-            ${bookB.rating ? `<p>Rating: ${bookB.rating.toFixed(1)}</p>` : '<p>Unrated</p>'}
+            ${bookB.genre ? `<p>${this.escapeHtml(bookB.genre)}</p>` : ''}
+            <p>Read ${bookBReads} time${bookBReads !== 1 ? 's' : ''}</p>
+            ${bookB.rating ? `<p>Score: ${bookB.rating.toFixed(1)}</p>` : '<p>Unrated</p>'}
         `;
     },
 
@@ -1466,16 +1695,16 @@ Message: ${results.message || 'Force sync completed successfully'}
         document.getElementById('progress-bar').style.setProperty('--progress', progressPercent + '%');
     },
 
-    // Results view
-    loadResultsView: async function() {
+    // Rankings view
+    loadRankingsView: async function() {
         try {
             // Calculate ranking
             const ranking = await updateCurrentRanking({ source: 'ui' });
             this.displayRanking(ranking);
-            this.displayStats(ranking);
         } catch (error) {
-            console.error('Error loading results view:', error);
-            alert('Error loading results: ' + error.message);
+            console.error('Error loading rankings view:', error);
+            const rankingsList = document.getElementById('rankings-list');
+            rankingsList.innerHTML = '<p>Error loading rankings. Try making some comparisons first!</p>';
         }
     },
 
@@ -1492,54 +1721,78 @@ Message: ${results.message || 'Force sync completed successfully'}
             const item = document.createElement('div');
             item.className = 'ranking-item';
             item.setAttribute('role', 'listitem');
+
+            const reads = book.timesRead || book.datesRead?.length || 0;
+
             item.innerHTML = `
-                <span class="rank-number">${index + 1}.</span>
+                <span class="rank-number">${index + 1}</span>
                 <span class="book-title">${this.escapeHtml(book.title)}</span>
                 <span class="book-author">by ${this.escapeHtml(book.author)}</span>
-                <span class="book-rating">Rating: ${book.rating ? book.rating.toFixed(1) : 'Unrated'}</span>
+                <span class="book-score">${book.rating ? book.rating.toFixed(1) : 'Unrated'}</span>
             `;
             rankingsList.appendChild(item);
         });
     },
 
-    displayStats: function(ranking) {
-        const statsContent = document.getElementById('stats-content');
-        if (!ranking) {
-            statsContent.innerHTML = '<p>No statistics available.</p>';
-            return;
-        }
+    undoLastComparison: async function() {
+        // For now, just show next comparison - full undo functionality would require storing comparison history
+        alert('Undo functionality coming soon! For now, continue with comparisons.');
+        this.showNextComparison();
+    },
 
-        const stats = ranking.getStats();
-        statsContent.innerHTML = `
-            <div class="stat-item">
-                <strong>Total Books:</strong> ${stats.totalBooks}
-            </div>
-            <div class="stat-item">
-                <strong>Rating Range:</strong> ${stats.lowestRating.toFixed(1)} - ${stats.highestRating.toFixed(1)}
-            </div>
-            <div class="stat-item">
-                <strong>Average Rating:</strong> ${stats.averageRating.toFixed(1)}
-            </div>
-        `;
+    handleBookCardClick: async function(event, choice) {
+        console.log('handleBookCardClick called with choice:', choice);
+        // Add visual feedback
+        const clickedCard = event.currentTarget;
+        clickedCard.classList.add('selected');
+
+        // Remove selection from other card
+        const otherCardId = choice === 'A' ? 'book-b' : 'book-a';
+        const otherCard = document.getElementById(otherCardId);
+        otherCard.classList.remove('selected');
+
+        // Process the comparison
+        console.log('About to call handleComparisonChoice');
+        await this.handleComparisonChoice(choice);
+        console.log('handleComparisonChoice completed');
+
+        // Remove visual feedback after a short delay
+        setTimeout(() => {
+            clickedCard.classList.remove('selected');
+        }, 300);
     },
 
     handleComparisonChoice: async function(choice) {
-        if (!this.currentComparison) return;
+        console.log('handleComparisonChoice called with choice:', choice);
+        if (!this.currentComparison) {
+            console.error('No current comparison available');
+            return;
+        }
 
         const winner = choice === 'A' ? this.currentComparison.bookA : this.currentComparison.bookB;
         const loser = choice === 'A' ? this.currentComparison.bookB : this.currentComparison.bookA;
 
+        console.log('Processing comparison:', { winner: winner.title, loser: loser.title });
+
         try {
             // Create and store comparison
+            console.log('Creating comparison object');
             const comparison = new Comparison(this.currentComparison.bookA.id, this.currentComparison.bookB.id, winner.id);
-            await storeComparison(comparison);
+            console.log('Storing comparison');
+            const comparisonId = await storeComparison(comparison);
+            console.log('Comparison stored with ID:', comparisonId);
 
             // Process comparisons to update ratings
-            await processAllComparisons();
+            console.log('Processing all comparisons');
+            const results = await processAllComparisons();
+            console.log('Comparison processing results:', results);
 
             // Update progress and show next comparison
+            console.log('Updating progress');
             this.updateComparisonProgress();
+            console.log('Showing next comparison...');
             this.showNextComparison();
+            console.log('Next comparison shown');
 
         } catch (error) {
             console.error('Error processing comparison:', error);
@@ -1547,14 +1800,104 @@ Message: ${results.message || 'Force sync completed successfully'}
         }
     },
 
-    exportRanking: function() {
-        // TODO: Implement export functionality
-        alert('Export functionality coming soon!');
+    exportRanking: async function() {
+        try {
+            const ranking = await getLatestRanking();
+            if (!ranking) {
+                alert('No rankings available to export. Make some comparisons first!');
+                return;
+            }
+
+            // Create CSV content
+            let csvContent = 'Rank,Title,Author,Score,Times Read\n';
+            ranking.rankedBooks.forEach((book, index) => {
+                const reads = book.timesRead || book.datesRead?.length || 0;
+                const score = book.rating ? book.rating.toFixed(1) : 'Unrated';
+                csvContent += `${index + 1},"${book.title}","${book.author}",${score},${reads}\n`;
+            });
+
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `shelf-showdown-rankings-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('Error exporting rankings:', error);
+            alert('Error exporting rankings: ' + error.message);
+        }
     },
 
-    sortRankings: function(sortBy) {
-        // TODO: Implement sorting
-        alert('Sorting functionality coming soon!');
+    sortRankings: async function(sortBy) {
+        try {
+            const books = await getAllBooks();
+            if (books.length === 0) return;
+
+            let sortedBooks;
+
+            switch (sortBy) {
+                case 'rank':
+                    // Get current ranking
+                    const ranking = await getLatestRanking();
+                    sortedBooks = ranking ? ranking.rankedBooks : books;
+                    break;
+                case 'title':
+                    sortedBooks = [...books].sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case 'author':
+                    sortedBooks = [...books].sort((a, b) => a.author.localeCompare(b.author));
+                    break;
+                case 'score':
+                    sortedBooks = [...books].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    break;
+                case 'reads':
+                    sortedBooks = [...books].sort((a, b) => {
+                        const aReads = a.timesRead || a.datesRead?.length || 0;
+                        const bReads = b.timesRead || b.datesRead?.length || 0;
+                        return bReads - aReads;
+                    });
+                    break;
+                default:
+                    sortedBooks = books;
+            }
+
+            // Display sorted books
+            this.displaySortedRanking(sortedBooks);
+
+        } catch (error) {
+            console.error('Error sorting rankings:', error);
+        }
+    },
+
+    displaySortedRanking: function(books) {
+        const rankingsList = document.getElementById('rankings-list');
+        rankingsList.innerHTML = '';
+
+        if (books.length === 0) {
+            rankingsList.innerHTML = '<p>No books available.</p>';
+            return;
+        }
+
+        books.forEach((book, index) => {
+            const item = document.createElement('div');
+            item.className = 'ranking-item';
+            item.setAttribute('role', 'listitem');
+
+            const reads = book.timesRead || book.datesRead?.length || 0;
+
+            item.innerHTML = `
+                <span class="rank-number">${index + 1}</span>
+                <span class="book-title">${this.escapeHtml(book.title)}</span>
+                <span class="book-author">by ${this.escapeHtml(book.author)}</span>
+                <span class="book-score">${book.rating ? book.rating.toFixed(1) : 'Unrated'}</span>
+            `;
+            rankingsList.appendChild(item);
+        });
     }
 };
 

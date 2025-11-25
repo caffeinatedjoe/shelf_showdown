@@ -10,116 +10,118 @@
 </head>
 <body>
     <div id="app" role="application" aria-label="Shelf Showdown Book Ranking App">
-        <!-- Navigation -->
-        <nav id="main-nav" role="navigation" aria-label="Main navigation">
-            <button id="nav-landing" class="nav-btn active" aria-label="Go to landing page">Home</button>
-            <button id="nav-books" class="nav-btn" aria-label="View and manage books">Books</button>
-            <button id="nav-compare" class="nav-btn" aria-label="Start book comparisons">Compare</button>
-            <button id="nav-results" class="nav-btn" aria-label="View rankings and results">Results</button>
+        <!-- Header with Logo -->
+        <header id="app-header">
+            <h1 id="app-title">Shelf Showdown</h1>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav id="tab-nav" role="navigation" aria-label="Main navigation">
+            <button id="tab-compare" class="tab-btn active" aria-label="Compare books">Compare</button>
+            <button id="tab-rankings" class="tab-btn" aria-label="View rankings">Rankings</button>
+            <button id="tab-add-book" class="tab-btn" aria-label="Add a new book">Add Book</button>
+            <button id="tab-settings" class="tab-btn" aria-label="Settings and options">Settings</button>
         </nav>
 
         <!-- Main Content Area -->
         <main id="main-content">
 
-            <!-- Landing View -->
-            <section id="landing-view" class="view active" role="main" aria-labelledby="landing-title">
-                <h1 id="landing-title">Welcome to Shelf Showdown</h1>
-                <p>Rank your books through systematic pairwise comparisons.</p>
-                <div id="auth-section" aria-labelledby="auth-title">
-                    <h2 id="auth-title">Authentication</h2>
-                    <button id="login-btn" class="neumorphic-btn" style="display: none;" aria-label="Login with Google">Login with Google</button>
-                    <div id="auth-status" aria-live="polite">Checking authentication...</div>
-                    <button id="logout-btn" class="neumorphic-btn" style="display: none;" aria-label="Logout">Logout</button>
-                </div>
-                <div id="sheets-section" style="display: none;" aria-labelledby="sheets-title">
-                    <h2 id="sheets-title">Google Sheets Integration</h2>
-                    <div>
-                        <label for="spreadsheet-id">Spreadsheet ID:</label>
-                        <input type="text" id="spreadsheet-id" placeholder="Enter Google Sheets ID" aria-describedby="spreadsheet-help">
-                        <span id="spreadsheet-help" class="sr-only">Enter your Google Sheets document ID to connect your book list</span>
-                        <button id="test-connection-btn" class="neumorphic-btn" aria-label="Test connection to spreadsheet">Test Connection</button>
-                        <button id="load-data-btn" class="neumorphic-btn" aria-label="Load data from spreadsheet">Load Sheet Data</button>
-                        <button id="parse-books-btn" class="neumorphic-btn" aria-label="Parse books from data">Parse Books</button>
-                        <button id="import-books-btn" class="neumorphic-btn" aria-label="Import books to database">Import Books to DB</button>
-                        <button id="view-db-btn" class="neumorphic-btn" aria-label="View database contents">View Database</button>
-                        <button id="insert-test-data-btn" class="neumorphic-btn" aria-label="Insert test data">Insert Test Data</button>
-                        <button id="append-test-data-btn" class="neumorphic-btn" aria-label="Append test data to sheet">Append Test Data</button>
-                    </div>
-                    <div id="sheets-status" aria-live="polite"></div>
-                    <div id="sheet-data-display" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace; background: #f5f5f5; padding: 10px; border: 1px solid #ccc;" aria-label="Sheet data display"></div>
+            <!-- Setup Screen (First-time users) -->
+            <section id="setup-view" class="view" role="main" aria-labelledby="setup-title" style="display: none;">
+                <div id="setup-content">
+                    <h1 id="setup-title">Welcome to Shelf Showdown</h1>
+                    <p>Connect your Google Sheet to import your book list and start ranking your favorite reads.</p>
+                    <button id="connect-google-btn" class="primary-btn" aria-label="Connect with Google">Connect with Google</button>
+                    <div id="setup-status" aria-live="polite"></div>
                 </div>
             </section>
 
-            <!-- Books View -->
-            <section id="books-view" class="view" role="main" aria-labelledby="books-title" style="display: none;">
-                <h1 id="books-title">Your Books</h1>
-                <div id="books-controls">
-                    <button id="add-book-btn" class="neumorphic-btn" aria-label="Add a new book">Add New Book</button>
-                    <button id="refresh-books-btn" class="neumorphic-btn" aria-label="Refresh book list">Refresh</button>
-                </div>
-                <div id="books-list" aria-label="List of books" role="list"></div>
-                <div id="add-book-form" style="display: none;" aria-labelledby="add-book-form-title">
-                    <h2 id="add-book-form-title">Add New Book</h2>
-                    <form id="book-form">
-                        <div>
-                            <label for="book-title">Title:</label>
-                            <input type="text" id="book-title" required aria-describedby="title-help">
-                            <span id="title-help" class="sr-only">Enter the book title</span>
-                        </div>
-                        <div>
-                            <label for="book-author">Author:</label>
-                            <input type="text" id="book-author" required aria-describedby="author-help">
-                            <span id="author-help" class="sr-only">Enter the book author</span>
-                        </div>
-                        <div>
-                            <label for="book-genre">Genre:</label>
-                            <input type="text" id="book-genre" aria-describedby="genre-help">
-                            <span id="genre-help" class="sr-only">Enter the book genre (optional)</span>
-                        </div>
-                        <button type="submit" class="neumorphic-btn" aria-label="Save new book">Save Book</button>
-                        <button type="button" id="cancel-add-book" class="neumorphic-btn" aria-label="Cancel adding book">Cancel</button>
-                    </form>
-                </div>
-            </section>
-
-            <!-- Compare View -->
-            <section id="compare-view" class="view" role="main" aria-labelledby="compare-title" style="display: none;">
-                <h1 id="compare-title">Compare Books</h1>
+            <!-- Compare Tab (Main Interface) -->
+            <section id="compare-view" class="view active" role="main" aria-labelledby="compare-title">
                 <div id="comparison-container">
                     <div id="book-a" class="book-card" aria-label="First book in comparison"></div>
                     <div id="vs-indicator" aria-label="versus">VS</div>
                     <div id="book-b" class="book-card" aria-label="Second book in comparison"></div>
                 </div>
-                <div id="comparison-buttons">
-                    <button id="choose-a-btn" class="neumorphic-btn" aria-label="Choose first book as preferred">Choose Left</button>
-                    <button id="choose-b-btn" class="neumorphic-btn" aria-label="Choose second book as preferred">Choose Right</button>
-                    <button id="skip-comparison-btn" class="neumorphic-btn" aria-label="Skip this comparison">Skip</button>
+                <div id="comparison-actions">
+                    <button id="skip-comparison-btn" class="text-btn" aria-label="Skip this comparison">Skip</button>
+                    <button id="undo-comparison-btn" class="text-btn" aria-label="Undo last comparison">Undo</button>
                 </div>
                 <div id="comparison-progress" aria-live="polite">
                     <div id="progress-bar"></div>
-                    <span id="progress-text">Comparisons completed: 0</span>
+                    <span id="progress-text">Keep going!</span>
                 </div>
-                <div id="comparison-history" aria-label="Recent comparison history"></div>
             </section>
 
-            <!-- Results View -->
-            <section id="results-view" class="view" role="main" aria-labelledby="results-title" style="display: none;">
-                <h1 id="results-title">Your Rankings</h1>
-                <div id="results-controls">
-                    <button id="calculate-ranking-btn" class="neumorphic-btn" aria-label="Calculate current ranking">Calculate Ranking</button>
-                    <button id="export-ranking-btn" class="neumorphic-btn" aria-label="Export ranking">Export</button>
+            <!-- Rankings Tab -->
+            <section id="rankings-view" class="view" role="main" aria-labelledby="rankings-title" style="display: none;">
+                <h1 id="rankings-title">Your Rankings</h1>
+                <div id="rankings-controls">
                     <select id="sort-options" aria-label="Sort rankings by">
-                        <option value="rating">By Rating</option>
+                        <option value="rank">By Rank</option>
                         <option value="title">By Title</option>
                         <option value="author">By Author</option>
-                        <option value="reads">By Read Count</option>
+                        <option value="score">By Score</option>
+                        <option value="reads">By Times Read</option>
                     </select>
+                    <button id="export-ranking-btn" class="secondary-btn" aria-label="Export ranking">Export</button>
                 </div>
                 <div id="rankings-list" aria-label="Ranked list of books" role="list"></div>
-                <div id="ranking-stats" aria-labelledby="stats-title">
-                    <h2 id="stats-title">Reading Statistics</h2>
-                    <div id="stats-content"></div>
+            </section>
+
+            <!-- Add Book Tab -->
+            <section id="add-book-view" class="view" role="main" aria-labelledby="add-book-title" style="display: none;">
+                <h1 id="add-book-title">Add New Book</h1>
+                <form id="add-book-form">
+                    <div class="form-group">
+                        <label for="book-title">Title *</label>
+                        <input type="text" id="book-title" required aria-describedby="title-help">
+                        <span id="title-help" class="sr-only">Enter the book title</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="book-author">Author *</label>
+                        <input type="text" id="book-author" required aria-describedby="author-help">
+                        <span id="author-help" class="sr-only">Enter the book author</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="book-genre">Genre</label>
+                        <input type="text" id="book-genre" aria-describedby="genre-help">
+                        <span id="genre-help" class="sr-only">Enter the book genre (optional)</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="book-reads">Times Read</label>
+                        <input type="number" id="book-reads" min="0" aria-describedby="reads-help">
+                        <span id="reads-help" class="sr-only">Enter how many times you've read this book</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="book-date-read">Date Read</label>
+                        <input type="date" id="book-date-read" aria-describedby="date-help">
+                        <span id="date-help" class="sr-only">Enter the date you last read this book</span>
+                    </div>
+                    <div id="add-book-buttons">
+                        <button type="submit" class="primary-btn" aria-label="Save new book">Save Book</button>
+                        <button type="button" id="cancel-add-book" class="secondary-btn" aria-label="Cancel adding book">Cancel</button>
+                    </div>
+                </form>
+                <div id="add-book-status" aria-live="polite"></div>
+            </section>
+
+            <!-- Settings Tab -->
+            <section id="settings-view" class="view" role="main" aria-labelledby="settings-title" style="display: none;">
+                <h1 id="settings-title">Settings</h1>
+                <div id="settings-content">
+                    <div class="settings-section">
+                        <h2>Account</h2>
+                        <button id="reconnect-google-btn" class="secondary-btn" aria-label="Reconnect Google account">Reconnect Google Sheets</button>
+                        <button id="logout-btn" class="danger-btn" aria-label="Logout">Logout</button>
+                    </div>
+                    <div class="settings-section">
+                        <h2>Data Management</h2>
+                        <p>Warning: This will permanently delete all your books and rankings.</p>
+                        <button id="purge-database-btn" class="danger-btn" aria-label="Purge all data">Purge Database</button>
+                    </div>
                 </div>
+                <div id="settings-status" aria-live="polite"></div>
             </section>
 
         </main>
