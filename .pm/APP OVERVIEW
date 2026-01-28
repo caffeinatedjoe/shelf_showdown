@@ -1,0 +1,51 @@
+The purpose of this application is that a user can take a list of items (specifically books) and do pairwise comparisons of them to end up with a full ranking of them.
+
+The user should be able to import from a csv file a list of audiobooks. For the MVP lets stick with the format:
+Title, Author, Date read, Annual Count, Length
+
+When the data is imported, it should be stored into json objects for each book. if a book is read multiple times, date read should be an array.
+
+The end goal is that the user can interact with this list of books in many ways, seeing lots of analysis, such as:
+1. top ranked book
+2. most recent read books
+3. most re-read books
+4. reading pace over time (books per week, year, month, etc.)
+5. reading genre over time
+etc.
+
+For the MVP, the data should be stored in the browser indexeddb.
+
+The database is the central source of truth. All views should be derived from it.
+
+When ranking books, ranking should be modular so that it could be changed out, or different types of ranking methods done without any changes to the underlying data structure.
+
+The MVP should have the ability to import from a publicly shared google sheet (that is shared as csv). Once they have imported, the user should be able to toggle between a rankings view, a book list view (with ability to sort by different methods), and an analysis view (which we can build out more later).
+
+The primary user will be on Mobile, but should be able to use on desktop as well.
+
+## MVP Questions
+
+- What are the top-priority success metrics that would validate the MVP ranking workflow as ready?
+the UI should be easy to navigate, clear, and fun to use. Rankings should feel natural and fun to do.
+- Which columns in the CSV import are mandatory, which can be omitted, and how should we handle missing or duplicate rows?
+for now the import will have the header titles. if a failure of import is encountered just throw an error in the console and some sort of error that is visible to the user.
+- Does each import replace the IndexedDB dataset, or should we support incremental/additive imports with duplicate reconciliation?
+for the MVP, just one import. if we import again, we clear out the old database. we can improve this feature in the future.
+- What upper bounds on list size and device capabilities should we plan for so the mobile-first experience remains responsive?
+assume a couple thousand books would be the upper limit (For now).
+- What does the canonical JSON schema for a book record need to include (unique identifier, history array, metadata) so ranking modules stay generic?
+i will leave this to the AI Agent to determine.
+- Which ranking methods must the MVP support, and what hooks or interfaces are required to keep the ranking module swappable?
+Elo style ranking with intelligent logic for fast insertion of new books (comparisons in a binary search method to get in the right neighborhood quiclky).
+- How should the Google Sheet import be identified and refreshed (static URL, token, manual refresh) and what cadence of updates is expected?
+only import once when the user manually triggers this. otherwise, it just loads from indexeddb until cleared. (should have ability to clear indexeddb).
+- For the rankings, book list, and analysis views, what sorting, filtering, and interaction requirements must ship in the MVP?
+rankings should show two books and you click on the one that is preferred. book list should show a list with ability to sort based on criteria (we can adjust the criteria later). filtering should be the same thing (multiple reads, reads after this date, etc.) should also be able to search.
+- Which analytics need to appear in the MVP analysis view (pace, re-reads, genre breakdowns, etc.), and are there expectations for visual presentation or performance?
+this is a stretch goal. right now the MVP just needs a placeholder, so use books per week over all time as a line chart.
+- Is offline access or multi-device sync a requirement for MVP IndexedDB data, or is persistence limited to a single browser profile?
+Each device imports a list, then that is the list on that device until cleared.
+- Are there specific accessibility or performance targets (e.g., touch target size, load time, WCAG level) that the architecture must honor for the mobile primary user?
+no.
+- What validation steps or tests will prove the MVP is acceptable (import coverage, ranking accuracy, view switching, IndexedDB persistence)?
+this is undefined and will be user preference for now.
