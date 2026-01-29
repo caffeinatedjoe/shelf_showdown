@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Shelf Showdown · Phase 1</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <p class="eyebrow">Shelf Showdown</p>
+      <h1>Phase 1 · Data Intake &amp; Sync</h1>
+      <p class="lede">
+        Import audiobooks from CSV or a shared Google Sheet, normalize the data, and store everything as the
+        canonical IndexedDB source so downstream ranking modules always rerun on fresh input.
+      </p>
+    </header>
+
+    <main class="page-grid">
+      <section class="panel" aria-labelledby="import-panel-label">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Step 1</p>
+            <h2 id="import-panel-label">Import sources</h2>
+          </div>
+          <p class="panel-note">
+            Imports always replace the current dataset. Duplicates within a file are merged and logged here.
+          </p>
+        </div>
+
+        <div class="import-grid">
+          <div class="import-card">
+            <label class="input-label" for="csv-file">CSV file</label>
+            <input id="csv-file" type="file" accept=".csv" aria-describedby="csv-hint" />
+            <p id="csv-hint" class="helper-text">Required headers: Title, Author, Date read, Annual Count, Length.</p>
+            <button class="primary-btn" id="csv-import-btn">Import CSV (replace)</button>
+          </div>
+
+          <div class="import-card">
+            <label class="input-label" for="sheet-url">Google Sheet CSV URL</label>
+            <input
+              id="sheet-url"
+              type="url"
+              placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv"
+              aria-describedby="sheet-hint"
+            />
+            <p id="sheet-hint" class="helper-text">
+              Manual refresh only. If the fetch fails (CORS, auth), download the CSV from Sheets and import above.
+            </p>
+            <button class="primary-btn" id="sheet-import-btn">Fetch sheet CSV</button>
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <button class="ghost-btn" id="clear-db-btn">Clear IndexedDB</button>
+          <div class="status-pill" id="import-status" aria-live="polite">No import yet</div>
+        </div>
+      </section>
+
+      <section class="panel logs" aria-labelledby="log-panel-label">
+        <div class="panel-heading">
+          <div>
+            <p class="eyebrow">Status</p>
+            <h2 id="log-panel-label">Ingestion logboard</h2>
+          </div>
+          <p class="panel-note">Every import produces a concise summary plus deduplication details.</p>
+        </div>
+
+        <div class="log-output" id="event-log" role="log" aria-live="polite"></div>
+        <div class="record-grid">
+          <div class="record-cell">
+            <p class="record-label">Records</p>
+            <p class="record-value" id="record-count">0</p>
+          </div>
+          <div class="record-cell">
+            <p class="record-label">Last import</p>
+            <p class="record-value" id="last-import">—</p>
+          </div>
+          <div class="record-cell">
+            <p class="record-label">Latest source</p>
+            <p class="record-value" id="last-source">—</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="src/index.js"></script>
+  </body>
+</html>
