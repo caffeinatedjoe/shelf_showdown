@@ -7,7 +7,8 @@ const HEADER_ALIASES = {
   length: ["Length", "Length (mins)", "Audio Length"],
   genre: ["Genre", "genre"],
   context: ["Context", "context", "Notes"],
-  sourceId: ["Source", "source"]
+  sourceId: ["Source", "source"],
+  score: ["Score", "score", "Ranking", "Ranking Score", "elo"]
 };
 
 const MONTH_ALIAS = {
@@ -245,13 +246,14 @@ function derivePaceFromReads(reads) {
   return pace;
 }
 
-function buildMetadata(reads) {
+function buildMetadata(reads, providedScore = null) {
   const latestRead = getLatestReadDate(reads);
+  const initialScore = typeof providedScore === "number" ? providedScore : BASE_SCORE;
   return {
-    score: BASE_SCORE,
+    score: initialScore,
     lastUpdated: new Date().toISOString(),
     sortKeys: {
-      score: BASE_SCORE,
+      score: initialScore,
       lastRead: latestRead,
       rereadCount: reads.length
     }
@@ -268,6 +270,7 @@ function buildRecord(row, options) {
 
   const reads = createReadEntries(getField(row, HEADER_ALIASES.dateRead), context, rawSource);
 
+  const providedScore = parseNumber(getField(row, HEADER_ALIASES.score));
   const derivedPace = derivePaceFromReads(reads);
   const record = {
     id: row.id || generateId(),
@@ -277,7 +280,7 @@ function buildRecord(row, options) {
     genre,
     reads,
     derivedPace,
-    rankingMetadata: buildMetadata(reads),
+    rankingMetadata: buildMetadata(reads, providedScore),
     ingestionMetadata: {
       schemaVersion: SCHEMA_VERSION,
       source: rawSource,
@@ -285,6 +288,9 @@ function buildRecord(row, options) {
       originalRow: row.__rowIndex ?? null
     }
   };
+  if (typeof providedScore === "number") {
+    record.ingestionMetadata.rankingProvided = true;
+  }
 
   return record;
 }

@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Shelf Showdown · Phase 1</title>
+    <title>Shelf Showdown · Phase 4</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="hero">
       <p class="eyebrow">Shelf Showdown</p>
-      <h1>Phase 1 · Data Intake &amp; Sync</h1>
+      <h1>Phase 4 · Accessibility-first views</h1>
       <p class="lede">
-        Import audiobooks from CSV or a shared Google Sheet, normalize the data, and store everything as the
-        canonical IndexedDB source so downstream ranking modules always rerun on fresh input.
+        Browse rankings, book lists, and analytics rendered directly from the canonical IndexedDB records. Every
+        control is keyboard-friendly, has generous touch targets, and re-derives state after imports or reranks.
       </p>
     </header>
 
@@ -82,6 +82,152 @@
           </div>
         </div>
       </section>
+
+      <div class="view-panels" role="region" aria-label="Phase 4 views">
+        <article class="view-section">
+          <section class="panel panel--full" id="rankings-panel" aria-labelledby="rankings-label">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Phase 4</p>
+                <h2 id="rankings-label">Rankings &amp; filters</h2>
+              </div>
+              <p class="panel-note">Sort by score, last read, rereads, or length and rerun the ranking engine on demand.</p>
+            </div>
+            <div class="view-controls">
+              <label class="control">
+                <span>Sort by</span>
+                <select id="ranking-sort">
+                  <option value="score">Score</option>
+                  <option value="lastRead">Most recent read</option>
+                  <option value="rereadCount">Rereads</option>
+                  <option value="lengthMinutes">Length</option>
+                </select>
+              </label>
+              <label class="control">
+                <span>Direction</span>
+                <button type="button" class="control-button" id="ranking-direction-toggle" aria-pressed="false">
+                  Newest first
+                </button>
+              </label>
+              <label class="control">
+                <span>Genre</span>
+                <select id="ranking-genre">
+                  <option value="all">All genres</option>
+                </select>
+              </label>
+              <label class="control control--wide">
+                <span>Search</span>
+                <input id="ranking-search" type="search" placeholder="Title or author" />
+              </label>
+              <label class="control">
+                <span>Reads filter</span>
+                <select id="ranking-read-filter">
+                  <option value="all">All records</option>
+                  <option value="read">Reads recorded</option>
+                  <option value="unread">No reads yet</option>
+                </select>
+              </label>
+              <button class="primary-btn" id="rerank-btn">Rerank now</button>
+            </div>
+            <div class="panel-footer panel-footer--dense">
+              <p class="panel-note" id="ranking-status" aria-live="polite">Ready</p>
+            </div>
+            <ol class="ranking-list" id="ranking-list" role="list"></ol>
+          </section>
+        </article>
+        <article class="view-section">
+          <section class="panel pairwise-panel" id="pairwise-panel" aria-labelledby="pairwise-label">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Matchup</p>
+                <h2 id="pairwise-label">Pairwise preference</h2>
+              </div>
+              <p class="panel-note">Pick your favorite between two books to immediately update their scores.</p>
+            </div>
+            <div class="pairwise-grid" aria-live="polite" aria-label="Choose your preferred book">
+              <article class="pairwise-card" id="pairwise-card-0">
+                <p class="pairwise-rank" id="pairwise-rank-0">#1</p>
+                <h3 id="pairwise-title-0">Waiting for data</h3>
+                <p id="pairwise-author-0">—</p>
+                <dl class="pairwise-stats">
+                  <div>
+                    <dt>Score</dt>
+                    <dd id="pairwise-score-0">—</dd>
+                  </div>
+                  <div>
+                    <dt>Last read</dt>
+                    <dd id="pairwise-lastread-0">—</dd>
+                  </div>
+                </dl>
+                <button class="secondary-btn pairwise-select" data-slot="0">
+                  Prefer this book
+                </button>
+              </article>
+              <article class="pairwise-card" id="pairwise-card-1">
+                <p class="pairwise-rank" id="pairwise-rank-1">#2</p>
+                <h3 id="pairwise-title-1">Waiting for data</h3>
+                <p id="pairwise-author-1">—</p>
+                <dl class="pairwise-stats">
+                  <div>
+                    <dt>Score</dt>
+                    <dd id="pairwise-score-1">—</dd>
+                  </div>
+                  <div>
+                    <dt>Last read</dt>
+                    <dd id="pairwise-lastread-1">—</dd>
+                  </div>
+                </dl>
+                <button class="secondary-btn pairwise-select" data-slot="1">
+                  Prefer this book
+                </button>
+              </article>
+            </div>
+            <div class="pairwise-actions">
+              <button class="ghost-btn" id="pairwise-skip-btn">Skip pair</button>
+              <p class="panel-note" id="pairwise-status" aria-live="polite">Choose a winner to update scores.</p>
+            </div>
+          </section>
+        </article>
+        <article class="view-section">
+          <section class="panel" id="book-list-panel" aria-labelledby="book-list-label">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Library</p>
+                <h2 id="book-list-label">Book list</h2>
+              </div>
+              <p class="panel-note">The canonical store drives this table, honoring every filter above.</p>
+            </div>
+            <div class="book-list-table-wrapper">
+              <table class="book-table" aria-describedby="book-list-status">
+                <thead>
+                  <tr>
+                    <th scope="col">Title</th>
+                    <th scope="col">Author</th>
+                    <th scope="col">Score</th>
+                    <th scope="col">Reads</th>
+                    <th scope="col">Length</th>
+                    <th scope="col">Genre</th>
+                  </tr>
+                </thead>
+                <tbody id="book-table-body"></tbody>
+              </table>
+            </div>
+            <p class="helper-text" id="book-list-status" aria-live="polite">Waiting for records.</p>
+          </section>
+        </article>
+        <article class="view-section">
+          <section class="panel panel--full" id="analytics-panel" aria-labelledby="analytics-label">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Analysis</p>
+                <h2 id="analytics-label">Analytics &amp; reporting</h2>
+              </div>
+              <p class="panel-note">Derived insights recompute after every import or rerank.</p>
+            </div>
+            <div class="analytics-grid" id="analytics-grid" aria-live="polite"></div>
+          </section>
+        </article>
+      </div>
     </main>
 
     <script type="module" src="src/index.js"></script>

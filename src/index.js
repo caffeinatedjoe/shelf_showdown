@@ -1,6 +1,8 @@
 import { parseCsv, normalizeRows } from "./ingestion.js";
 import { replaceBooks, clearBooks, getAllBooks } from "./storage.js";
 import { emitIngestionEvent } from "./events.js";
+import { rerankRecords } from "./ranking.js";
+import { initializeViews } from "./views.js";
 
 const csvInput = document.getElementById("csv-file");
 const csvButton = document.getElementById("csv-import-btn");
@@ -69,6 +71,15 @@ async function runImport(sourceText, sourceLabel) {
   addLog(`Normalized ${normalized.records.length} records from ${rows.length} rows.`, "info");
   normalized.log.forEach((line) => addLog(line, "info"));
 
+  const hasProvidedRankings = normalized.records.some(
+    (record) => record.ingestionMetadata?.rankingProvided === true
+  );
+  if (!hasProvidedRankings) {
+    rerankRecords(normalized.records, {
+      featureWeights: { rereads: 1 }
+    });
+  }
+
   try {
     await replaceBooks(normalized.records);
     const duration = (performance.now ? performance.now() : Date.now()) - parseStart;
@@ -135,3 +146,4 @@ clearButton.addEventListener("click", async () => {
 });
 
 reloadCounters();
+initializeViews();

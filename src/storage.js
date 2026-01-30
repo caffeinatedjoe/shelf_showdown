@@ -3,6 +3,7 @@ const BOOK_STORE = "books";
 
 export const SCHEMA_METADATA = {
   version: "1.0",
+  store: BOOK_STORE,
   fields: [
     "id",
     "title",
@@ -14,7 +15,7 @@ export const SCHEMA_METADATA = {
     "rankingMetadata",
     "ingestionMetadata"
   ],
-  description: "Normalized book record persisted as the canonical IndexedDB store."
+  description: "Normalized book records persisted into the canonical IndexedDB store."
 };
 
 let dbPromise;
@@ -76,5 +77,19 @@ export async function clearBooks() {
     store.clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function getBookById(id) {
+  if (!id) {
+    return null;
+  }
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(BOOK_STORE, "readonly");
+    const store = tx.objectStore(BOOK_STORE);
+    const request = store.get(id);
+    request.onsuccess = () => resolve(request.result ?? null);
+    request.onerror = () => reject(request.error);
   });
 }

@@ -3,6 +3,6 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "node tests/ingestion.test.js"
+    "test": "node tests/ingestion.test.js && node tests/state.test.js && node tests/ranking.test.js && node tests/views.test.js"
   }
 }
