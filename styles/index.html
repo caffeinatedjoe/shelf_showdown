@@ -6,7 +6,7 @@
   <title>Shelf Showdown — Playful Design Ideas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&family=Lilita+One&family=Outfit:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&family=Lilita+One&family=Outfit:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -14,18 +14,84 @@
     <p class="intro-kicker">Design exploration</p>
     <h1>Playful directions for Shelf Showdown</h1>
     <p class="intro-lede">
-      The live app leans Netflix-dark and serious. These four concepts keep the same product job —
-      pick a winner in a matchup — but make the moment feel more like a game, a zine, or a night at the bookstore.
+      The live app leans Netflix-dark and title-only. The newest direction puts real covers in the matchup —
+      jacket art first, title under it — so each pick feels like choosing a book off a face-out shelf.
     </p>
     <p class="intro-note">Pick a direction to build next, or mix pieces. Nothing here is wired to the app yet.</p>
   </header>
 
   <nav class="concept-nav" aria-label="Concepts">
+    <a href="#face-out">5 · Face Out</a>
     <a href="#ring-round">1 · Ring Round</a>
     <a href="#stack-attack">2 · Stack Attack</a>
     <a href="#zine-fight">3 · Zine Fight</a>
     <a href="#late-fee">4 · Late Fee</a>
   </nav>
+
+  <!-- 5. FACE OUT (cover-forward) -->
+  <article id="face-out" class="concept concept-featured">
+    <div class="concept-meta">
+      <span class="concept-num">05 · new</span>
+      <h2>Face Out</h2>
+      <p class="mood">Bookstore window · jacket art first · cool gallery light</p>
+      <p>
+        Built for covers. Each choice is a face-out book you can almost pull off the shelf —
+        large jacket, thin page edge, title and author underneath. Quiet chrome so the art does the talking.
+      </p>
+      <ul class="traits">
+        <li>Covers are the primary click target (2∶3 portraits)</li>
+        <li>Title + author sit under the jacket — never stamped on the art</li>
+        <li>Soft mist wall + oak shelf ledge; cobalt accent, not neon</li>
+        <li>Motion: covers lift off the shelf on hover / pick</li>
+        <li>Mock uses Open Library jackets; app would resolve covers by ISBN/title</li>
+      </ul>
+    </div>
+    <div class="stage stage-face" aria-label="Face Out preview">
+      <div class="face-room">
+        <header class="face-header">
+          <p class="face-brand">Shelf Showdown</p>
+          <p class="face-progress">Placing book · pick 3 of 9</p>
+        </header>
+        <p class="face-prompt">Which one stays higher on your shelf?</p>
+        <div class="face-matchup">
+          <button type="button" class="face-book" aria-label="Prefer The Left Hand of Darkness">
+            <span class="face-jacket">
+              <img
+                src="https://covers.openlibrary.org/b/isbn/0441478123-L.jpg"
+                alt=""
+                width="200"
+                height="300"
+                loading="lazy"
+              />
+              <span class="face-edge" aria-hidden="true"></span>
+            </span>
+            <span class="face-title">The Left Hand of Darkness</span>
+            <span class="face-author">Ursula K. Le Guin</span>
+          </button>
+          <span class="face-or" aria-hidden="true">or</span>
+          <button type="button" class="face-book" aria-label="Prefer Neuromancer">
+            <span class="face-jacket">
+              <img
+                src="https://covers.openlibrary.org/b/isbn/9780441569595-L.jpg"
+                alt=""
+                width="200"
+                height="300"
+                loading="lazy"
+              />
+              <span class="face-edge" aria-hidden="true"></span>
+            </span>
+            <span class="face-title">Neuromancer</span>
+            <span class="face-author">William Gibson</span>
+          </button>
+        </div>
+        <div class="face-shelf" aria-hidden="true"></div>
+        <div class="face-actions">
+          <button type="button" class="face-btn">Skip book</button>
+          <button type="button" class="face-btn face-btn-ghost">Undo</button>
+        </div>
+      </div>
+    </div>
+  </article>
 
   <!-- 1. RING ROUND -->
   <article id="ring-round" class="concept">
@@ -216,6 +282,7 @@
           <tr>
             <th></th>
             <th>Current</th>
+            <th>Face Out</th>
             <th>Ring Round</th>
             <th>Stack Attack</th>
             <th>Zine Fight</th>
@@ -226,6 +293,7 @@
           <tr>
             <th scope="row">Mood</th>
             <td>Streaming dark</td>
+            <td>Bookstore window</td>
             <td>Carnival bout</td>
             <td>Game night</td>
             <td>DIY zine</td>
@@ -234,6 +302,7 @@
           <tr>
             <th scope="row">Palette</th>
             <td>Black + Netflix red</td>
+            <td>Mist + oak + cobalt</td>
             <td>Mustard + brick</td>
             <td>Teal felt + coral</td>
             <td>Ink + highlighter</td>
@@ -242,6 +311,7 @@
           <tr>
             <th scope="row">Type</th>
             <td>Bebas Neue</td>
+            <td>Syne</td>
             <td>Archivo Black</td>
             <td>Lilita One</td>
             <td>Space Grotesk</td>
@@ -249,7 +319,8 @@
           </tr>
           <tr>
             <th scope="row">Matchup feel</th>
-            <td>Hover cards</td>
+            <td>Title cards</td>
+            <td>Cover + title</td>
             <td>Poster corners</td>
             <td>Dealt tokens</td>
             <td>Taped cutouts</td>
@@ -258,6 +329,7 @@
           <tr>
             <th scope="row">Best if…</th>
             <td>Brand stays serious</td>
+            <td>You want real jackets</td>
             <td>You want spectacle</td>
             <td>You want cozy play</td>
             <td>You want attitude</td>
@@ -270,8 +342,8 @@
 
   <footer class="outro">
     <p>
-      Recommendation: <strong>Stack Attack</strong> for the friendliest everyday play,
-      or <strong>Ring Round</strong> if the name “Showdown” should stay loud.
+      Recommendation: <strong>Face Out</strong> once covers are in the product —
+      jackets carry recognition; the UI stays quiet enough that art can be loud.
       Open this file locally: <code>styles/index.html</code>
     </p>
   </footer>
