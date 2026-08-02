@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Shelf Showdown — Playful Design Ideas</title>
+  <title>Shelf Showdown — Mobile Style Ideas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&family=Lilita+One&family=Outfit:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
@@ -11,13 +11,13 @@
 </head>
 <body>
   <header class="intro">
-    <p class="intro-kicker">Design exploration</p>
-    <h1>Playful directions for Shelf Showdown</h1>
+    <p class="intro-kicker">Design exploration · mobile app first</p>
+    <h1>Shelf Showdown in your hand</h1>
     <p class="intro-lede">
-      The live app leans Netflix-dark and title-only. The newest direction puts real covers in the matchup —
-      jacket art first, title under it — so each pick feels like choosing a book off a face-out shelf.
+      Every direction below is mocked as a phone app — status bar, thumb-zone actions,
+      bottom tabs — not a wide marketing page. Face Out leads with real covers.
     </p>
-    <p class="intro-note">Pick a direction to build next, or mix pieces. Nothing here is wired to the app yet.</p>
+    <p class="intro-note">Tap targets are sized for thumbs. Nothing here is wired to the live app yet.</p>
   </header>
 
   <nav class="concept-nav" aria-label="Concepts">
@@ -28,66 +28,80 @@
     <a href="#late-fee">4 · Late Fee</a>
   </nav>
 
-  <!-- 5. FACE OUT (cover-forward) -->
+  <!-- 5. FACE OUT -->
   <article id="face-out" class="concept concept-featured">
     <div class="concept-meta">
-      <span class="concept-num">05 · new</span>
+      <span class="concept-num">05 · lead</span>
       <h2>Face Out</h2>
-      <p class="mood">Bookstore window · jacket art first · cool gallery light</p>
+      <p class="mood">Phone shelf · jacket art first · one-thumb picks</p>
       <p>
-        Built for covers. Each choice is a face-out book you can almost pull off the shelf —
-        large jacket, thin page edge, title and author underneath. Quiet chrome so the art does the talking.
+        A native-feeling sort screen: big covers you tap, title under each jacket,
+        progress in the top bar, Skip/Undo in the thumb zone, tabs along the bottom.
       </p>
       <ul class="traits">
-        <li>Covers are the primary click target (2∶3 portraits)</li>
-        <li>Title + author sit under the jacket — never stamped on the art</li>
-        <li>Soft mist wall + oak shelf ledge; cobalt accent, not neon</li>
-        <li>Motion: covers lift off the shelf on hover / pick</li>
-        <li>Mock uses Open Library jackets; app would resolve covers by ISBN/title</li>
+        <li>Phone chrome + home indicator — reads as an app, not a site</li>
+        <li>Covers fill the screen; title/author never cover the art</li>
+        <li>Bottom tab bar: Sort · Rankings · Stats · Library</li>
+        <li>Motion: cover lifts toward you on press</li>
       </ul>
     </div>
-    <div class="stage stage-face" aria-label="Face Out preview">
-      <div class="face-room">
-        <header class="face-header">
-          <p class="face-brand">Shelf Showdown</p>
-          <p class="face-progress">Placing book · pick 3 of 9</p>
-        </header>
-        <p class="face-prompt">Which one stays higher on your shelf?</p>
-        <div class="face-matchup">
-          <button type="button" class="face-book" aria-label="Prefer The Left Hand of Darkness">
-            <span class="face-jacket">
-              <img
-                src="https://covers.openlibrary.org/b/isbn/0441478123-L.jpg"
-                alt=""
-                width="200"
-                height="300"
-                loading="lazy"
-              />
-              <span class="face-edge" aria-hidden="true"></span>
-            </span>
-            <span class="face-title">The Left Hand of Darkness</span>
-            <span class="face-author">Ursula K. Le Guin</span>
-          </button>
-          <span class="face-or" aria-hidden="true">or</span>
-          <button type="button" class="face-book" aria-label="Prefer Neuromancer">
-            <span class="face-jacket">
-              <img
-                src="https://covers.openlibrary.org/b/isbn/9780441569595-L.jpg"
-                alt=""
-                width="200"
-                height="300"
-                loading="lazy"
-              />
-              <span class="face-edge" aria-hidden="true"></span>
-            </span>
-            <span class="face-title">Neuromancer</span>
-            <span class="face-author">William Gibson</span>
-          </button>
-        </div>
-        <div class="face-shelf" aria-hidden="true"></div>
-        <div class="face-actions">
-          <button type="button" class="face-btn">Skip book</button>
-          <button type="button" class="face-btn face-btn-ghost">Undo</button>
+    <div class="stage" aria-label="Face Out phone preview">
+      <div class="phone phone-face">
+        <div class="phone-shell">
+          <div class="phone-statusbar">
+            <span>9:41</span>
+            <span class="phone-notch" aria-hidden="true"></span>
+            <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
+          </div>
+          <div class="app-screen face-screen">
+            <header class="app-topbar">
+              <p class="app-brand">Shelf Showdown</p>
+              <p class="app-progress">3 / 9</p>
+            </header>
+            <p class="app-prompt">Which stays higher?</p>
+            <div class="face-matchup">
+              <button type="button" class="face-book" aria-label="Prefer The Left Hand of Darkness">
+                <span class="face-jacket">
+                  <img
+                    src="https://covers.openlibrary.org/b/isbn/0441478123-L.jpg"
+                    alt=""
+                    width="200"
+                    height="300"
+                    loading="lazy"
+                  />
+                  <span class="face-edge" aria-hidden="true"></span>
+                </span>
+                <span class="face-title">The Left Hand of Darkness</span>
+                <span class="face-author">Ursula K. Le Guin</span>
+              </button>
+              <button type="button" class="face-book" aria-label="Prefer Neuromancer">
+                <span class="face-jacket">
+                  <img
+                    src="https://covers.openlibrary.org/b/isbn/9780441569595-L.jpg"
+                    alt=""
+                    width="200"
+                    height="300"
+                    loading="lazy"
+                  />
+                  <span class="face-edge" aria-hidden="true"></span>
+                </span>
+                <span class="face-title">Neuromancer</span>
+                <span class="face-author">William Gibson</span>
+              </button>
+            </div>
+            <div class="face-shelf" aria-hidden="true"></div>
+            <div class="thumb-actions">
+              <button type="button" class="thumb-btn">Skip</button>
+              <button type="button" class="thumb-btn thumb-btn-quiet">Undo</button>
+            </div>
+            <nav class="tabbar" aria-label="App tabs">
+              <span class="tabbar-item active">Sort</span>
+              <span class="tabbar-item">Ranks</span>
+              <span class="tabbar-item">Stats</span>
+              <span class="tabbar-item">Library</span>
+            </nav>
+          </div>
+          <div class="phone-home" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -100,37 +114,54 @@
       <h2>Ring Round</h2>
       <p class="mood">Carnival bout · poster ink · mustard &amp; brick</p>
       <p>
-        Lean into the “showdown” name. Every pick is a bout under the lights — chunky poster type,
-        a stamped VS, and book titles that feel like fighter names on a card.
+        Same fight-night energy, packed into a phone: stacked corner posters,
+        stamped VS between taps, Skip/Undo in the thumb zone.
       </p>
       <ul class="traits">
-        <li>Hero brand is the whole first read</li>
-        <li>Matchup cards tilt like corner posters</li>
-        <li>Mustard / brick / off-white — no purple, no neon glow</li>
+        <li>Vertical bout cards sized for one-hand scrolling</li>
+        <li>Mustard / brick — no purple, no neon glow</li>
         <li>Motion: posters slap in, VS stamps down</li>
       </ul>
     </div>
-    <div class="stage stage-ring" aria-label="Ring Round preview">
-      <div class="ring-bg"></div>
-      <div class="ring-frame">
-        <p class="ring-brand">Shelf<br />Showdown</p>
-        <p class="ring-tag">Tonight’s bout · round 3 of 9</p>
-        <div class="ring-matchup">
-          <button type="button" class="ring-card ring-card-a">
-            <span class="ring-corner">Red corner</span>
-            <span class="ring-title">The Left Hand of Darkness</span>
-            <span class="ring-author">Ursula K. Le Guin</span>
-          </button>
-          <span class="ring-vs">VS</span>
-          <button type="button" class="ring-card ring-card-b">
-            <span class="ring-corner">Blue corner</span>
-            <span class="ring-title">Neuromancer</span>
-            <span class="ring-author">William Gibson</span>
-          </button>
-        </div>
-        <div class="ring-actions">
-          <button type="button" class="ring-btn">Skip bout</button>
-          <button type="button" class="ring-btn ring-btn-ghost">Undo</button>
+    <div class="stage" aria-label="Ring Round phone preview">
+      <div class="phone phone-ring">
+        <div class="phone-shell">
+          <div class="phone-statusbar phone-statusbar-light">
+            <span>9:41</span>
+            <span class="phone-notch" aria-hidden="true"></span>
+            <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
+          </div>
+          <div class="app-screen ring-screen">
+            <header class="app-topbar app-topbar-on-dark">
+              <p class="app-brand ring-brand-inline">Shelf Showdown</p>
+              <p class="app-progress">3 / 9</p>
+            </header>
+            <p class="ring-tag">Tonight’s bout</p>
+            <div class="ring-matchup">
+              <button type="button" class="ring-card ring-card-a">
+                <span class="ring-corner">Red corner</span>
+                <span class="ring-title">The Left Hand of Darkness</span>
+                <span class="ring-author">Ursula K. Le Guin</span>
+              </button>
+              <span class="ring-vs">VS</span>
+              <button type="button" class="ring-card ring-card-b">
+                <span class="ring-corner">Blue corner</span>
+                <span class="ring-title">Neuromancer</span>
+                <span class="ring-author">William Gibson</span>
+              </button>
+            </div>
+            <div class="thumb-actions">
+              <button type="button" class="thumb-btn ring-thumb">Skip</button>
+              <button type="button" class="thumb-btn thumb-btn-quiet ring-thumb-quiet">Undo</button>
+            </div>
+            <nav class="tabbar tabbar-dark" aria-label="App tabs">
+              <span class="tabbar-item active">Sort</span>
+              <span class="tabbar-item">Ranks</span>
+              <span class="tabbar-item">Stats</span>
+              <span class="tabbar-item">Library</span>
+            </nav>
+          </div>
+          <div class="phone-home phone-home-light" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -143,39 +174,54 @@
       <h2>Stack Attack</h2>
       <p class="mood">Tabletop game night · felt green · chunky tokens</p>
       <p>
-        Treat the shelf like a board game. Soft felt play area, thick “token” book choices,
-        and a progress chip that counts picks like turns.
+        Felt play mat as a full-screen phone app. Token cards stack for thumbs;
+        turn chip lives in the top bar like a game HUD.
       </p>
       <ul class="traits">
-        <li>Felt table texture + paper card stock</li>
-        <li>Lilita / Outfit — toy-store energy without cartoon chaos</li>
-        <li>Teal felt, coral token, cream cards</li>
-        <li>Motion: cards deal from a deck, bounce on pick</li>
+        <li>Full-bleed felt inside the device frame</li>
+        <li>Tall token cards, coral primary in the thumb zone</li>
+        <li>Motion: cards deal in and bounce on pick</li>
       </ul>
     </div>
-    <div class="stage stage-stack" aria-label="Stack Attack preview">
-      <div class="stack-felt">
-        <header class="stack-header">
-          <p class="stack-brand">Shelf Showdown</p>
-          <span class="stack-chip">Turn 4 · 2 left in pile</span>
-        </header>
-        <p class="stack-prompt">Which one stays higher on the stack?</p>
-        <div class="stack-matchup">
-          <button type="button" class="stack-card">
-            <span class="stack-spine"></span>
-            <span class="stack-title">Circe</span>
-            <span class="stack-author">Madeline Miller</span>
-          </button>
-          <span class="stack-or">or</span>
-          <button type="button" class="stack-card stack-card-tilt">
-            <span class="stack-spine stack-spine-alt"></span>
-            <span class="stack-title">Piranesi</span>
-            <span class="stack-author">Susanna Clarke</span>
-          </button>
-        </div>
-        <div class="stack-actions">
-          <button type="button" class="stack-btn">Skip this title</button>
-          <button type="button" class="stack-btn stack-btn-soft">Undo last pick</button>
+    <div class="stage" aria-label="Stack Attack phone preview">
+      <div class="phone phone-stack">
+        <div class="phone-shell">
+          <div class="phone-statusbar phone-statusbar-light">
+            <span>9:41</span>
+            <span class="phone-notch" aria-hidden="true"></span>
+            <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
+          </div>
+          <div class="app-screen stack-screen">
+            <header class="app-topbar app-topbar-on-dark">
+              <p class="app-brand stack-brand-inline">Shelf Showdown</p>
+              <span class="stack-chip">Turn 4</span>
+            </header>
+            <p class="stack-prompt">Which stays higher?</p>
+            <div class="stack-matchup">
+              <button type="button" class="stack-card">
+                <span class="stack-spine"></span>
+                <span class="stack-title">Circe</span>
+                <span class="stack-author">Madeline Miller</span>
+              </button>
+              <span class="stack-or">or</span>
+              <button type="button" class="stack-card stack-card-tilt">
+                <span class="stack-spine stack-spine-alt"></span>
+                <span class="stack-title">Piranesi</span>
+                <span class="stack-author">Susanna Clarke</span>
+              </button>
+            </div>
+            <div class="thumb-actions">
+              <button type="button" class="thumb-btn stack-thumb">Skip</button>
+              <button type="button" class="thumb-btn thumb-btn-quiet stack-thumb-quiet">Undo</button>
+            </div>
+            <nav class="tabbar tabbar-dark" aria-label="App tabs">
+              <span class="tabbar-item active">Sort</span>
+              <span class="tabbar-item">Ranks</span>
+              <span class="tabbar-item">Stats</span>
+              <span class="tabbar-item">Library</span>
+            </nav>
+          </div>
+          <div class="phone-home phone-home-light" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -188,39 +234,56 @@
       <h2>Zine Fight</h2>
       <p class="mood">Photocopied DIY · highlighter slash · crooked cutouts</p>
       <p>
-        A reader’s zine about taste. High-contrast ink, a chartreuse highlighter bar,
-        and matchup panels that look scissor-cut and taped down.
+        A pocket zine app: cutout panels stacked for one-handed picks,
+        highlighter brand, tape corners — still phone chrome, not a desktop paste-up.
       </p>
       <ul class="traits">
-        <li>Space Grotesk + IBM Plex Mono for stamps and captions</li>
-        <li>Newsprint grain, slight rotation, tape corners</li>
-        <li>Ink black, highlighter yellow-green, tomato accent</li>
-        <li>Motion: cutouts flutter in; highlighter draws under brand</li>
+        <li>Stacked cutouts fill the phone body</li>
+        <li>Ink + highlighter, tomato accent</li>
+        <li>Motion: cutouts flutter in</li>
       </ul>
     </div>
-    <div class="stage stage-zine" aria-label="Zine Fight preview">
-      <div class="zine-page">
-        <p class="zine-issue">Issue 01 · personal ranking club</p>
-        <h3 class="zine-brand">Shelf <span>Showdown</span></h3>
-        <p class="zine-lede">Cut one. Keep one. Argue with yourself later.</p>
-        <div class="zine-matchup">
-          <button type="button" class="zine-clip zine-clip-a">
-            <span class="zine-tape"></span>
-            <span class="zine-label">A</span>
-            <span class="zine-title">Klara and the Sun</span>
-            <span class="zine-author">Kazuo Ishiguro</span>
-          </button>
-          <span class="zine-vs">pick one</span>
-          <button type="button" class="zine-clip zine-clip-b">
-            <span class="zine-tape zine-tape-b"></span>
-            <span class="zine-label">B</span>
-            <span class="zine-title">Never Let Me Go</span>
-            <span class="zine-author">Kazuo Ishiguro</span>
-          </button>
-        </div>
-        <div class="zine-footer">
-          <button type="button" class="zine-btn">skip →</button>
-          <button type="button" class="zine-btn zine-btn-line">undo</button>
+    <div class="stage" aria-label="Zine Fight phone preview">
+      <div class="phone phone-zine">
+        <div class="phone-shell">
+          <div class="phone-statusbar">
+            <span>9:41</span>
+            <span class="phone-notch" aria-hidden="true"></span>
+            <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
+          </div>
+          <div class="app-screen zine-screen">
+            <header class="app-topbar">
+              <p class="app-brand zine-brand-inline">Shelf <span>Showdown</span></p>
+              <p class="app-progress">3 / 9</p>
+            </header>
+            <p class="zine-lede">Cut one. Keep one.</p>
+            <div class="zine-matchup">
+              <button type="button" class="zine-clip zine-clip-a">
+                <span class="zine-tape"></span>
+                <span class="zine-label">A</span>
+                <span class="zine-title">Klara and the Sun</span>
+                <span class="zine-author">Kazuo Ishiguro</span>
+              </button>
+              <span class="zine-vs">pick one</span>
+              <button type="button" class="zine-clip zine-clip-b">
+                <span class="zine-tape zine-tape-b"></span>
+                <span class="zine-label">B</span>
+                <span class="zine-title">Never Let Me Go</span>
+                <span class="zine-author">Kazuo Ishiguro</span>
+              </button>
+            </div>
+            <div class="thumb-actions">
+              <button type="button" class="thumb-btn zine-thumb">Skip</button>
+              <button type="button" class="thumb-btn thumb-btn-quiet">Undo</button>
+            </div>
+            <nav class="tabbar" aria-label="App tabs">
+              <span class="tabbar-item active">Sort</span>
+              <span class="tabbar-item">Ranks</span>
+              <span class="tabbar-item">Stats</span>
+              <span class="tabbar-item">Library</span>
+            </nav>
+          </div>
+          <div class="phone-home" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -233,55 +296,68 @@
       <h2>Late Fee</h2>
       <p class="mood">Playful library desk · stamp pad · seafoam &amp; ink</p>
       <p>
-        Warm checkout-desk humor without going full nostalgia costume.
-        Rubber-stamp rank badges, due-date progress, and soft seafoam walls
-        that still feel like a product — not a museum.
+        Checkout-desk humor as a compact phone app: stacked cards,
+        stamp accent in the top bar, renew/skip in the thumb zone.
       </p>
       <ul class="traits">
-        <li>Fraunces for brand, DM Sans for UI</li>
-        <li>Seafoam field, ink navy type, stamp coral</li>
-        <li>Matchup as two “checkout cards”</li>
-        <li>Motion: stamp thump on pick, date stamp rolls</li>
+        <li>Seafoam field inside the device</li>
+        <li>Stacked checkout cards for thumbs</li>
+        <li>Motion: stamp thump on pick</li>
       </ul>
     </div>
-    <div class="stage stage-late" aria-label="Late Fee preview">
-      <div class="late-desk">
-        <header class="late-header">
-          <p class="late-brand">Shelf Showdown</p>
-          <span class="late-stamp">Patron ranking desk</span>
-        </header>
-        <p class="late-prompt">Which title renews on your top shelf?</p>
-        <div class="late-matchup">
-          <button type="button" class="late-card">
-            <span class="late-barcode"></span>
-            <span class="late-title">Project Hail Mary</span>
-            <span class="late-author">Andy Weir</span>
-            <span class="late-due">Due: your heart</span>
-          </button>
-          <span class="late-vs">renew?</span>
-          <button type="button" class="late-card">
-            <span class="late-barcode late-barcode-b"></span>
-            <span class="late-title">The Martian</span>
-            <span class="late-author">Andy Weir</span>
-            <span class="late-due">Due: yesterday</span>
-          </button>
-        </div>
-        <div class="late-actions">
-          <button type="button" class="late-btn">Skip title</button>
-          <button type="button" class="late-btn late-btn-ghost">Undo stamp</button>
+    <div class="stage" aria-label="Late Fee phone preview">
+      <div class="phone phone-late">
+        <div class="phone-shell">
+          <div class="phone-statusbar">
+            <span>9:41</span>
+            <span class="phone-notch" aria-hidden="true"></span>
+            <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
+          </div>
+          <div class="app-screen late-screen">
+            <header class="app-topbar">
+              <p class="app-brand late-brand-inline">Shelf Showdown</p>
+              <span class="late-stamp">Desk</span>
+            </header>
+            <p class="late-prompt">Which renews higher?</p>
+            <div class="late-matchup">
+              <button type="button" class="late-card">
+                <span class="late-barcode"></span>
+                <span class="late-title">Project Hail Mary</span>
+                <span class="late-author">Andy Weir</span>
+                <span class="late-due">Due: your heart</span>
+              </button>
+              <span class="late-vs">renew?</span>
+              <button type="button" class="late-card">
+                <span class="late-barcode late-barcode-b"></span>
+                <span class="late-title">The Martian</span>
+                <span class="late-author">Andy Weir</span>
+                <span class="late-due">Due: yesterday</span>
+              </button>
+            </div>
+            <div class="thumb-actions">
+              <button type="button" class="thumb-btn late-thumb">Skip</button>
+              <button type="button" class="thumb-btn thumb-btn-quiet">Undo</button>
+            </div>
+            <nav class="tabbar" aria-label="App tabs">
+              <span class="tabbar-item active">Sort</span>
+              <span class="tabbar-item">Ranks</span>
+              <span class="tabbar-item">Stats</span>
+              <span class="tabbar-item">Library</span>
+            </nav>
+          </div>
+          <div class="phone-home" aria-hidden="true"></div>
         </div>
       </div>
     </div>
   </article>
 
   <section class="compare-table">
-    <h2>How they differ from today</h2>
+    <h2>Mobile app checklist</h2>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
             <th></th>
-            <th>Current</th>
             <th>Face Out</th>
             <th>Ring Round</th>
             <th>Stack Attack</th>
@@ -291,49 +367,44 @@
         </thead>
         <tbody>
           <tr>
-            <th scope="row">Mood</th>
-            <td>Streaming dark</td>
-            <td>Bookstore window</td>
-            <td>Carnival bout</td>
-            <td>Game night</td>
-            <td>DIY zine</td>
-            <td>Library desk</td>
+            <th scope="row">Device frame</th>
+            <td>Phone</td>
+            <td>Phone</td>
+            <td>Phone</td>
+            <td>Phone</td>
+            <td>Phone</td>
           </tr>
           <tr>
-            <th scope="row">Palette</th>
-            <td>Black + Netflix red</td>
-            <td>Mist + oak + cobalt</td>
-            <td>Mustard + brick</td>
-            <td>Teal felt + coral</td>
-            <td>Ink + highlighter</td>
-            <td>Seafoam + navy</td>
+            <th scope="row">Primary tap</th>
+            <td>Cover</td>
+            <td>Poster card</td>
+            <td>Token card</td>
+            <td>Cutout</td>
+            <td>Checkout card</td>
           </tr>
           <tr>
-            <th scope="row">Type</th>
-            <td>Bebas Neue</td>
-            <td>Syne</td>
-            <td>Archivo Black</td>
-            <td>Lilita One</td>
-            <td>Space Grotesk</td>
-            <td>Fraunces</td>
+            <th scope="row">Thumb zone</th>
+            <td>Skip / Undo</td>
+            <td>Skip / Undo</td>
+            <td>Skip / Undo</td>
+            <td>Skip / Undo</td>
+            <td>Skip / Undo</td>
           </tr>
           <tr>
-            <th scope="row">Matchup feel</th>
-            <td>Title cards</td>
-            <td>Cover + title</td>
-            <td>Poster corners</td>
-            <td>Dealt tokens</td>
-            <td>Taped cutouts</td>
-            <td>Checkout cards</td>
+            <th scope="row">Tab bar</th>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
+            <td>Yes</td>
           </tr>
           <tr>
             <th scope="row">Best if…</th>
-            <td>Brand stays serious</td>
-            <td>You want real jackets</td>
-            <td>You want spectacle</td>
-            <td>You want cozy play</td>
-            <td>You want attitude</td>
-            <td>You want warmth</td>
+            <td>You want jackets</td>
+            <td>Spectacle</td>
+            <td>Cozy play</td>
+            <td>Attitude</td>
+            <td>Warmth</td>
           </tr>
         </tbody>
       </table>
@@ -342,9 +413,9 @@
 
   <footer class="outro">
     <p>
-      Recommendation: <strong>Face Out</strong> once covers are in the product —
-      jackets carry recognition; the UI stays quiet enough that art can be loud.
-      Open this file locally: <code>styles/index.html</code>
+      Recommendation: <strong>Face Out</strong> as the mobile app direction —
+      covers, phone chrome, and a quiet shell so jacket art can lead.
+      Open locally: <code>styles/index.html</code>
     </p>
   </footer>
 </body>
