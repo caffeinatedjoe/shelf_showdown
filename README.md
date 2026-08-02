@@ -18,6 +18,10 @@ Hosted on GitHub Pages: [joecoffey.me/shelf_showdown](https://joecoffey.me/shelf
 
 The static frontend (`index.html`, `app.js`, `style.css`, `modules/`) is served from the `main` branch root. Backend stays on Convex.
 
+## Design ideas
+
+Playful visual directions (not wired into the app yet) live in [`design_ideas/index.html`](design_ideas/index.html) — Ring Round, Stack Attack, Zine Fight, and Late Fee.
+
 ## Run it locally
 
 ```bash
