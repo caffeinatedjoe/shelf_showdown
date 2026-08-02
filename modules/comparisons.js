@@ -198,6 +198,20 @@ export function syncSessionWithBooks(session, books) {
     if (next.low > next.high) {
       next = { ...next, low: next.high };
     }
+    // Range collapsed after a library change — finish placing the candidate.
+    if (next.low >= next.high && next.candidateId) {
+      const rankedIdsWithCandidate = [...next.rankedIds];
+      rankedIdsWithCandidate.splice(next.low, 0, next.candidateId);
+      next = beginNextCandidate({
+        rankedIds: rankedIdsWithCandidate,
+        candidateId: null,
+        low: 0,
+        high: 0,
+        boundStack: [],
+        lastPlacement: null,
+        phase: "inserting",
+      }, books);
+    }
   } else if (next.phase !== "done") {
     next = beginNextCandidate(next, books);
   } else {

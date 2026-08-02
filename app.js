@@ -557,9 +557,18 @@ async function chooseWinner(winnerId) {
   btn.classList.add("picked");
   busy = true;
 
+  const previousSession = sortSession;
+
   try {
     const result = applyInsertionPick(sortSession, winnerId, state.books);
-    await recordComparisonRemote(winnerId, loserId);
+    if (!result.placed && result.session === sortSession) {
+      throw new Error("Could not apply that pick — try again.");
+    }
+
+    /** @type {{ bookId: string, rating: number }[] | undefined} */
+    let updates;
+    /** @type {SortSession} */
+    let nextSession = result.session;
 
     if (result.placed && result.placedId) {
       const rankedIds = [
@@ -567,7 +576,7 @@ async function chooseWinner(winnerId) {
         result.placedId,
         ...result.rankedIdsBefore.slice(result.placementIndex),
       ];
-      const updates = ratingUpdatesForPlacement(
+      updates = ratingUpdatesForPlacement(
         rankedIds,
         state.books,
         result.placedId
@@ -576,12 +585,13 @@ async function chooseWinner(winnerId) {
         const book = state.books.find((b) => b.id === u.bookId);
         return { bookId: u.bookId, rating: book?.rating ?? INITIAL_RATING };
       });
-      sortSession = withPlacementPriorRatings(result.session, priorRatings);
-      await setRatingsRemote(updates);
-    } else {
-      sortSession = result.session;
+      nextSession = withPlacementPriorRatings(result.session, priorRatings);
     }
 
+    // One mutation: log the pick and assign placement ratings atomically
+    await recordComparisonRemote(winnerId, loserId, updates);
+
+    sortSession = nextSession;
     saveSortSession(sortSession);
     await refreshState();
 
@@ -592,6 +602,8 @@ async function chooseWinner(winnerId) {
       void renderCompare();
     }, 160);
   } catch (err) {
+    sortSession = previousSession;
+    saveSortSession(sortSession);
     btn.classList.remove("picked");
     busy = false;
     els.compareProgress.textContent =

@@ -37,13 +37,21 @@ export const list = query({
 });
 
 /**
- * Record a binary-insertion matchup. Ratings are assigned on placement
- * (books:setRatings), so this only logs the pick and bumps comparison counts.
+ * Record a binary-insertion matchup. Optionally apply position ratings in the
+ * same transaction when a book is placed (avoids partial failure across calls).
  */
 export const record = mutation({
   args: {
     winnerId: v.id("books"),
     loserId: v.id("books"),
+    ratingUpdates: v.optional(
+      v.array(
+        v.object({
+          bookId: v.id("books"),
+          rating: v.number(),
+        })
+      )
+    ),
   },
   returns: comparisonValidator,
   handler: async (ctx, args) => {
@@ -68,6 +76,19 @@ export const record = mutation({
     await ctx.db.patch(loser._id, {
       comparisons: loser.comparisons + 1,
     });
+
+    if (args.ratingUpdates) {
+      for (const update of args.ratingUpdates) {
+        const book = await assertBookInLibrary(
+          ctx,
+          library._id,
+          update.bookId
+        );
+        if (book.rating !== update.rating) {
+          await ctx.db.patch(book._id, { rating: update.rating });
+        }
+      }
+    }
 
     const id = await ctx.db.insert("comparisons", {
       libraryId: library._id,

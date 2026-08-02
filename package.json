@@ -8,6 +8,7 @@
     "dev": "npx convex dev --start 'npx serve .'",
     "serve": "npx serve .",
     "convex:dev": "npx convex dev",
+    "test": "node --test modules/comparisons.test.js",
     "lint": "echo \"no lint configured\""
   },
   "dependencies": {

@@ -101,9 +101,15 @@ export async function clearLibraryRemote() {
 /**
  * @param {string} winnerId
  * @param {string} loserId
+ * @param {{ bookId: string, rating: number }[]} [ratingUpdates]
  */
-export async function recordComparisonRemote(winnerId, loserId) {
-  await convexMutation("comparisons:record", { winnerId, loserId });
+export async function recordComparisonRemote(winnerId, loserId, ratingUpdates) {
+  /** @type {Record<string, unknown>} */
+  const args = { winnerId, loserId };
+  if (ratingUpdates && ratingUpdates.length > 0) {
+    args.ratingUpdates = ratingUpdates;
+  }
+  await convexMutation("comparisons:record", args);
 }
 
 export async function undoLastComparisonRemote() {
