@@ -15,7 +15,7 @@
       <div class="header-row">
         <div>
           <h1 class="brand">Shelf Showdown</h1>
-          <p class="tagline">Pick a winner each matchup. Build your personal top shelf.</p>
+          <p class="tagline">Place each book on your shelf with a few quick picks.</p>
         </div>
         <div id="account-bar" class="account-bar" hidden>
           <span id="account-email" class="account-email"></span>
@@ -25,8 +25,8 @@
     </header>
 
     <section id="auth-panel" class="auth-panel" aria-label="Account">
-      <h2 class="view-title">Sign in to your shelf</h2>
-      <p class="view-lede">Create an account so your library and rankings follow you across devices.</p>
+      <h2 class="view-title">Create your account</h2>
+      <p class="view-lede">You’ll need an account to save your library and rankings across devices.</p>
       <form id="auth-form" class="auth-form">
         <label class="field">
           <span>Email</span>
@@ -34,11 +34,11 @@
         </label>
         <label class="field">
           <span>Password</span>
-          <input type="password" id="auth-password" name="password" required minlength="8" autocomplete="current-password" placeholder="At least 8 characters" />
+          <input type="password" id="auth-password" name="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" />
         </label>
         <div class="auth-actions">
-          <button type="submit" class="btn btn-raised" id="auth-sign-in-btn" data-flow="signIn">Sign in</button>
-          <button type="button" class="btn btn-flat" id="auth-sign-up-btn" data-flow="signUp">Create account</button>
+          <button type="submit" class="btn btn-raised" id="auth-sign-up-btn" data-flow="signUp">Create account</button>
+          <button type="button" class="btn btn-flat" id="auth-sign-in-btn" data-flow="signIn">Sign in</button>
         </div>
       </form>
       <p id="auth-status" class="status" aria-live="polite"></p>
@@ -46,17 +46,81 @@
 
     <div id="app-shell" hidden>
     <nav class="tabs" role="tablist" aria-label="Main">
-      <button type="button" class="tab active" role="tab" aria-selected="true" data-view="library">Library</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" data-view="compare">Compare</button>
+      <button type="button" class="tab active" role="tab" aria-selected="true" data-view="compare">Sort</button>
       <button type="button" class="tab" role="tab" aria-selected="false" data-view="rankings">Rankings</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" data-view="rereads">Rereads</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-view="stats">Stats</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-view="library">Library</button>
     </nav>
 
     <main id="main">
-      <!-- Library -->
-      <section id="view-library" class="view active" role="tabpanel">
+      <!-- Compare (default when library is ready) -->
+      <section id="view-compare" class="view active" role="tabpanel">
+        <h2 class="view-title">Sort Your Shelf</h2>
+        <p class="view-lede">Each new book is binary-searched into your ranking — about 9 picks per title in a 400-book library, not thousands.</p>
+
+        <div id="compare-empty" class="empty-state" hidden>
+          <p>Add at least two books to start sorting.</p>
+          <button type="button" id="compare-to-library" class="btn btn-raised">Set up library</button>
+        </div>
+
+        <div id="compare-done" class="empty-state" hidden>
+          <p>Your shelf is fully sorted. Rankings shows the final order. Add more books anytime to place them.</p>
+          <div class="compare-actions">
+            <button type="button" id="compare-to-rankings" class="btn btn-raised">See rankings</button>
+            <button type="button" id="resort-btn" class="btn btn-flat">Sort again from scratch</button>
+          </div>
+        </div>
+
+        <div id="compare-active">
+          <div class="matchup" id="matchup">
+            <button type="button" class="book-choice" id="choice-a" aria-label="Prefer book A"></button>
+            <p class="vs" aria-hidden="true">vs</p>
+            <button type="button" class="book-choice" id="choice-b" aria-label="Prefer book B"></button>
+          </div>
+          <div class="compare-actions">
+            <button type="button" id="skip-btn" class="btn btn-flat">Skip book</button>
+            <button type="button" id="undo-btn" class="btn btn-flat">Undo</button>
+          </div>
+          <p id="compare-progress" class="status" aria-live="polite"></p>
+        </div>
+      </section>
+
+      <!-- Rankings -->
+      <section id="view-rankings" class="view" role="tabpanel" hidden>
+        <h2 class="view-title">Top Shelf</h2>
+        <p class="view-lede">Your personal order from binary-insertion sorting.</p>
+        <ol id="rankings-list" class="rankings-list"></ol>
+        <p id="rankings-empty" class="empty-state" hidden>No books yet. Import or add some to see rankings.</p>
+      </section>
+
+      <!-- Stats -->
+      <section id="view-stats" class="view" role="tabpanel" hidden>
+        <h2 class="view-title">Your Shelf Stats</h2>
+        <p class="view-lede">Totals, re-reads, and how your library has grown over time.</p>
+
+        <div id="stats-summary" class="stats-grid" aria-live="polite"></div>
+
+        <div id="stats-monthly" class="stats-section" hidden>
+          <h3 class="stats-heading">Books added by month</h3>
+          <ul id="monthly-chart" class="monthly-chart" aria-label="Books added per month"></ul>
+        </div>
+
+        <div class="stats-section">
+          <h3 class="stats-heading">Most re-read</h3>
+          <ol id="rereads-list" class="rankings-list"></ol>
+          <p id="rereads-empty" class="empty-state" hidden>No re-reads yet. Import a reading log with the same title listed more than once.</p>
+        </div>
+      </section>
+
+      <!-- Library (setup / management) -->
+      <section id="view-library" class="view" role="tabpanel" hidden>
         <h2 class="view-title">My Library</h2>
-        <p class="view-lede">Add titles manually, import a CSV, or pull from a public Google Sheet.</p>
+        <p class="view-lede">Add titles manually, import a CSV, or pull from a public Google Sheet. Once you have two or more, sorting is ready.</p>
+
+        <div id="library-ready-cta" class="library-cta" hidden>
+          <p>Your library is ready.</p>
+          <button type="button" id="library-to-compare" class="btn btn-raised">Start sorting</button>
+        </div>
 
         <form id="add-book-form" class="add-form">
           <label class="field">
@@ -95,45 +159,6 @@
 
         <p id="library-status" class="status" aria-live="polite"></p>
         <ul id="book-list" class="book-list"></ul>
-      </section>
-
-      <!-- Compare -->
-      <section id="view-compare" class="view" role="tabpanel" hidden>
-        <h2 class="view-title">Tonight’s Matchup</h2>
-        <p class="view-lede">Tap the book you’d rather re-read. Rankings update after every pick.</p>
-
-        <div id="compare-empty" class="empty-state" hidden>
-          <p>Add at least two books in Library to start comparing.</p>
-        </div>
-
-        <div id="compare-active">
-          <div class="matchup" id="matchup">
-            <button type="button" class="book-choice" id="choice-a" aria-label="Prefer book A"></button>
-            <p class="vs" aria-hidden="true">vs</p>
-            <button type="button" class="book-choice" id="choice-b" aria-label="Prefer book B"></button>
-          </div>
-          <div class="compare-actions">
-            <button type="button" id="skip-btn" class="btn btn-flat">Skip</button>
-            <button type="button" id="undo-btn" class="btn btn-flat">Undo</button>
-          </div>
-          <p id="compare-progress" class="status" aria-live="polite"></p>
-        </div>
-      </section>
-
-      <!-- Rankings -->
-      <section id="view-rankings" class="view" role="tabpanel" hidden>
-        <h2 class="view-title">Top Shelf</h2>
-        <p class="view-lede">Ordered by Elo score from pairwise wins and losses.</p>
-        <ol id="rankings-list" class="rankings-list"></ol>
-        <p id="rankings-empty" class="empty-state" hidden>No books yet. Import or add some to see rankings.</p>
-      </section>
-
-      <!-- Rereads -->
-      <section id="view-rereads" class="view" role="tabpanel" hidden>
-        <h2 class="view-title">Most Re-read</h2>
-        <p class="view-lede">Books you’ve finished more than once, ordered by times read.</p>
-        <ol id="rereads-list" class="rankings-list"></ol>
-        <p id="rereads-empty" class="empty-state" hidden>No re-reads yet. Import a reading log with the same title listed more than once.</p>
       </section>
     </main>
     </div>

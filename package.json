@@ -2,6 +2,7 @@
   "name": "shelf-showdown",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://joecoffey.me/shelf_showdown/",
   "type": "module",
   "scripts": {
     "dev": "npx convex dev --start 'npx serve .'",

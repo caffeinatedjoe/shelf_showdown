@@ -1,18 +1,24 @@
 # Shelf Showdown
 
-Rank your books through pairwise comparisons. Pick a winner each matchup; Elo scores build your personal shelf order.
+Rank your books with binary insertion: each title is placed into your shelf with about log₂(n) picks instead of endless pairwise Elo grind.
 
 ## MVP features
 
 - **Accounts** — email/password sign-up and sign-in (Convex Auth)
 - **Library** — add books manually, import a CSV, or load from a public Google Sheets URL
-- **Compare** — tap the book you prefer; skip or undo anytime
-- **Rankings** — live Elo-ordered list with scores
+- **Sort** — binary-search each book into your ranking; skip or undo anytime
+- **Rankings** — live ordered shelf from completed placements
 - **Rereads** — books finished more than once, sorted by times read
 
 Data is stored in [Convex](https://convex.dev) with email/password auth via Convex Auth. Sign up once; your library and rankings persist to your account across devices.
 
-## Run it
+## Live site
+
+Hosted on GitHub Pages: [joecoffey.me/shelf_showdown](https://joecoffey.me/shelf_showdown/)
+
+The static frontend (`index.html`, `app.js`, `style.css`, `modules/`) is served from the `main` branch root. Backend stays on Convex.
+
+## Run it locally
 
 ```bash
 npm install

@@ -198,3 +198,27 @@ export const clearAll = mutation({
     return null;
   },
 });
+
+/** Assign position-based ratings after binary-insertion placement. */
+export const setRatings = mutation({
+  args: {
+    updates: v.array(
+      v.object({
+        bookId: v.id("books"),
+        rating: v.number(),
+      })
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const library = await requireLibraryForUser(ctx);
+    for (const update of args.updates) {
+      const book = await ctx.db.get(update.bookId);
+      if (!book || book.libraryId !== library._id) {
+        throw new Error("Book not found");
+      }
+      await ctx.db.patch(update.bookId, { rating: update.rating });
+    }
+    return null;
+  },
+});

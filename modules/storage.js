@@ -110,6 +110,14 @@ export async function undoLastComparisonRemote() {
   await convexMutation("comparisons:undoLast", {});
 }
 
+/**
+ * @param {{ bookId: string, rating: number }[]} updates
+ */
+export async function setRatingsRemote(updates) {
+  if (updates.length === 0) return;
+  await convexMutation("books:setRatings", { updates });
+}
+
 /** Kept for local pair-picking helpers that still need ephemeral ids. */
 export function createId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {

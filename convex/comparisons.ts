@@ -1,7 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { updateRatings } from "./lib/elo";
 import {
   assertBookInLibrary,
   getLibraryForUser,
@@ -37,6 +36,10 @@ export const list = query({
   },
 });
 
+/**
+ * Record a binary-insertion matchup. Ratings are assigned on placement
+ * (books:setRatings), so this only logs the pick and bumps comparison counts.
+ */
 export const record = mutation({
   args: {
     winnerId: v.id("books"),
@@ -58,14 +61,11 @@ export const record = mutation({
 
     const beforeA = winner.rating;
     const beforeB = loser.rating;
-    const { ratingA, ratingB } = updateRatings(beforeA, beforeB, 1);
 
     await ctx.db.patch(winner._id, {
-      rating: ratingA,
       comparisons: winner.comparisons + 1,
     });
     await ctx.db.patch(loser._id, {
-      rating: ratingB,
       comparisons: loser.comparisons + 1,
     });
 
@@ -107,13 +107,11 @@ export const undoLast = mutation({
 
     if (winner && winner.libraryId === library._id) {
       await ctx.db.patch(winner._id, {
-        rating: last.ratingA,
         comparisons: Math.max(0, winner.comparisons - 1),
       });
     }
     if (loser && loser.libraryId === library._id) {
       await ctx.db.patch(loser._id, {
-        rating: last.ratingB,
         comparisons: Math.max(0, loser.comparisons - 1),
       });
     }
