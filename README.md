@@ -20,7 +20,7 @@ The static frontend (`index.html`, `app.js`, `style.css`, `modules/`) is served 
 
 ## Design ideas
 
-Playful visual directions (not wired into the app yet) live in [`design_ideas/index.html`](design_ideas/index.html) — Ring Round, Stack Attack, Zine Fight, and Late Fee.
+Playful visual directions (not wired into the app yet) live in [`styles/index.html`](styles/index.html) — Ring Round, Stack Attack, Zine Fight, and Late Fee.
 
 ## Run it locally
 
