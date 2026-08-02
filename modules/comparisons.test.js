@@ -8,6 +8,7 @@ import {
   applyInsertionPick,
   createFreshSortSession,
   createSortSession,
+  ensureMatchupPivot,
   estimatedSortComparisons,
   pickPairFromSession,
   ratingUpdatesForPlacement,
@@ -53,7 +54,8 @@ function sortLibrary(n, prefer = preferLowerId) {
   if (seed) seed.rating = 500_000;
 
   let picks = 0;
-  while (session.phase !== "done") {
+    while (session.phase !== "done") {
+    session = ensureMatchupPivot(session);
     const pair = pickPairFromSession(session, books);
     assert.ok(pair, `stuck after ${picks} picks`);
     const winnerId = prefer(pair[0], pair[1]);
@@ -224,6 +226,7 @@ describe("binary insertion sort", () => {
     books[1].rating = 600_000;
     let session = createSortSession(books);
     while (session.rankedIds.length < 3 && session.phase !== "done") {
+      session = ensureMatchupPivot(session);
       const pair = pickPairFromSession(session, books);
       if (!pair) break;
       const result = applyInsertionPick(session, pair[0].id, books);

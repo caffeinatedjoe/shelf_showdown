@@ -13,6 +13,7 @@ import {
   applyInsertionPick,
   clearSortSession,
   createSortSession,
+  ensureMatchupPivot,
   estimatedSortComparisons,
   loadSortSession,
   parseCsv,
@@ -279,7 +280,17 @@ async function renderCompare() {
   els.compareEmpty.hidden = true;
   els.compareActive.hidden = false;
 
-  currentPair = pickPairFromSession(sortSession, state.books);
+  sortSession = ensureMatchupPivot(sortSession);
+  saveSortSession(sortSession);
+
+  if (!currentPair || !matchupStillValid(currentPair, sortSession)) {
+    const pair = pickPairFromSession(sortSession, state.books);
+    currentPair = pair
+      ? Math.random() < 0.5
+        ? pair
+        : [pair[1], pair[0]]
+      : null;
+  }
 
   if (!currentPair) {
     els.compareProgress.textContent = "Placing book…";
@@ -300,6 +311,17 @@ async function renderCompare() {
     busy ||
     (state.comparisons.length === 0 &&
       !(sortSession?.boundStack.length || sortSession?.lastPlacement));
+}
+
+/**
+ * @param {[Book, Book]} pair
+ * @param {SortSession} session
+ */
+function matchupStillValid(pair, session) {
+  if (!session?.candidateId || session.pivotIndex == null) return false;
+  const opponentId = session.rankedIds[session.pivotIndex];
+  const ids = new Set([pair[0].id, pair[1].id]);
+  return ids.has(session.candidateId) && ids.has(opponentId);
 }
 
 /**

@@ -24,7 +24,15 @@ import { updateRatings } from "./ranking.js";
  *   candidateId: string | null,
  *   low: number,
  *   high: number,
- *   boundStack: { low: number, high: number }[],
+ *   pivotIndex: number | null,
+ *   boundStack: {
+ *     low: number,
+ *     high: number,
+ *     pivotIndex: number | null,
+ *     candidateId: string | null,
+ *     pending: Record<string, { low: number, high: number }>,
+ *   }[],
+ *   pending: Record<string, { low: number, high: number }>,
  *   lastPlacement: PlacementUndo | null,
  *   phase: "inserting" | "done",
  * }} SortSession
@@ -33,6 +41,11 @@ import { updateRatings } from "./ranking.js";
 const RATING_CEILING = 1_000_000;
 const MIN_RATING_GAP = 2;
 const SESSION_KEY = "shelf-showdown-sort-session";
+/** Chance to jump to a different unranked book after a non-placing pick. */
+const ROTATE_CANDIDATE_CHANCE =
+  typeof process !== "undefined" && process.env?.SHELF_SHOWDOWN_TEST === "1"
+    ? 0
+    : 0.62;
 
 /**
  * @param {Book[]} books
@@ -68,29 +81,39 @@ export function createSortSession(books) {
           b.rating - a.rating || a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
       )
       .map((b) => b.id);
-    return beginNextCandidate({
-      rankedIds,
-      candidateId: null,
-      low: 0,
-      high: 0,
-      boundStack: [],
-      lastPlacement: null,
-      phase: "inserting",
-    }, books);
+    return beginNextCandidate(
+      {
+        rankedIds,
+        candidateId: null,
+        low: 0,
+        high: 0,
+        pivotIndex: null,
+        boundStack: [],
+        pending: {},
+        lastPlacement: null,
+        phase: "inserting",
+      },
+      books
+    );
   }
 
   const seedId = pickSeedId(books);
   if (!seedId) return emptySession();
 
-  return beginNextCandidate({
-    rankedIds: [seedId],
-    candidateId: null,
-    low: 0,
-    high: 0,
-    boundStack: [],
-    lastPlacement: null,
-    phase: "inserting",
-  }, books);
+  return beginNextCandidate(
+    {
+      rankedIds: [seedId],
+      candidateId: null,
+      low: 0,
+      high: 0,
+      pivotIndex: null,
+      boundStack: [],
+      pending: {},
+      lastPlacement: null,
+      phase: "inserting",
+    },
+    books
+  );
 }
 
 /**
@@ -102,15 +125,20 @@ export function createFreshSortSession(books) {
   if (books.length === 0) return emptySession();
   const seedId = pickSeedId(books);
   if (!seedId) return emptySession();
-  return beginNextCandidate({
-    rankedIds: [seedId],
-    candidateId: null,
-    low: 0,
-    high: 0,
-    boundStack: [],
-    lastPlacement: null,
-    phase: "inserting",
-  }, books);
+  return beginNextCandidate(
+    {
+      rankedIds: [seedId],
+      candidateId: null,
+      low: 0,
+      high: 0,
+      pivotIndex: null,
+      boundStack: [],
+      pending: {},
+      lastPlacement: null,
+      phase: "inserting",
+    },
+    books
+  );
 }
 
 /** @returns {SortSession} */
@@ -120,53 +148,191 @@ function emptySession() {
     candidateId: null,
     low: 0,
     high: 0,
+    pivotIndex: null,
     boundStack: [],
+    pending: {},
     lastPlacement: null,
     phase: "done",
   };
 }
 
 /**
+ * @template T
+ * @param {T[]} items
+ * @returns {T | undefined}
+ */
+function pickRandom(items) {
+  if (items.length === 0) return undefined;
+  return items[Math.floor(Math.random() * items.length)];
+}
+
+/**
+ * @param {number} low
+ * @param {number} high
+ * @returns {number | null}
+ */
+function randomPivot(low, high) {
+  if (low >= high) return null;
+  // Deterministic midpoint in tests; random opponent in the app for variety.
+  if (
+    typeof process !== "undefined" &&
+    process.env?.SHELF_SHOWDOWN_TEST === "1"
+  ) {
+    return Math.floor((low + high) / 2);
+  }
+  return low + Math.floor(Math.random() * (high - low));
+}
+
+/**
  * @param {SortSession} session
- * @param {Book[]} books
  * @returns {SortSession}
  */
-function beginNextCandidate(session, books) {
+function withFreshPivot(session) {
+  return {
+    ...session,
+    pivotIndex: randomPivot(session.low, session.high),
+  };
+}
+
+/**
+ * Normalize older sessionStorage payloads that predate pivot/pending fields.
+ * @param {Partial<SortSession> & { rankedIds: string[] }} raw
+ * @returns {SortSession}
+ */
+function normalizeSession(raw) {
+  return {
+    rankedIds: raw.rankedIds ?? [],
+    candidateId: raw.candidateId ?? null,
+    low: raw.low ?? 0,
+    high: raw.high ?? 0,
+    pivotIndex: raw.pivotIndex ?? null,
+    boundStack: Array.isArray(raw.boundStack) ? raw.boundStack : [],
+    pending: raw.pending && typeof raw.pending === "object" ? raw.pending : {},
+    lastPlacement: raw.lastPlacement ?? null,
+    phase: raw.phase === "done" ? "done" : "inserting",
+  };
+}
+
+/**
+ * @param {Book[]} books
+ * @param {string | null} [avoidId]
+ * @param {SortSession} session
+ * @returns {string | null}
+ */
+function pickNextUnrankedId(session, books, avoidId = null) {
   const rankedSet = new Set(session.rankedIds);
-  const next = books.find((b) => !rankedSet.has(b.id));
-  if (!next) {
+  const pendingIds = Object.keys(session.pending ?? {}).filter(
+    (id) => !rankedSet.has(id) && books.some((b) => b.id === id)
+  );
+  const freshIds = books
+    .filter((b) => !rankedSet.has(b.id) && !(session.pending ?? {})[b.id])
+    .map((b) => b.id);
+  const pool = [...new Set([...pendingIds, ...freshIds])].filter(
+    (id) => id !== avoidId
+  );
+  const fallback = [...new Set([...pendingIds, ...freshIds])];
+  const choices = pool.length > 0 ? pool : fallback;
+  if (choices.length === 0) return null;
+  if (
+    typeof process !== "undefined" &&
+    process.env?.SHELF_SHOWDOWN_TEST === "1"
+  ) {
+    return choices.sort()[0] ?? null;
+  }
+  return pickRandom(choices) ?? null;
+}
+
+/**
+ * @param {SortSession} session
+ * @param {Book[]} books
+ * @param {string | null} [avoidId]
+ * @returns {SortSession}
+ */
+function beginNextCandidate(session, books, avoidId = null) {
+  const pending = { ...(session.pending ?? {}) };
+  const nextId = pickNextUnrankedId(
+    { ...session, pending },
+    books,
+    avoidId
+  );
+
+  if (!nextId) {
     return {
       rankedIds: session.rankedIds,
       candidateId: null,
       low: 0,
       high: 0,
+      pivotIndex: null,
       boundStack: [],
+      pending: {},
       lastPlacement: session.lastPlacement ?? null,
       phase: "done",
     };
   }
 
   if (session.rankedIds.length === 0) {
-    return beginNextCandidate({
-      rankedIds: [next.id],
-      candidateId: null,
-      low: 0,
-      high: 0,
-      boundStack: [],
-      lastPlacement: null,
-      phase: "inserting",
-    }, books);
+    return beginNextCandidate(
+      {
+        rankedIds: [nextId],
+        candidateId: null,
+        low: 0,
+        high: 0,
+        pivotIndex: null,
+        boundStack: [],
+        pending: {},
+        lastPlacement: null,
+        phase: "inserting",
+      },
+      books,
+      avoidId
+    );
   }
 
-  return {
+  const saved = pending[nextId];
+  delete pending[nextId];
+  const low = saved?.low ?? 0;
+  const high = saved?.high ?? session.rankedIds.length;
+  const clampedLow = Math.max(0, Math.min(low, session.rankedIds.length));
+  const clampedHigh = Math.max(
+    clampedLow,
+    Math.min(high, session.rankedIds.length)
+  );
+
+  return withFreshPivot({
     rankedIds: session.rankedIds,
-    candidateId: next.id,
-    low: 0,
-    high: session.rankedIds.length,
-    boundStack: [],
+    candidateId: nextId,
+    low: clampedLow,
+    high: clampedHigh,
+    pivotIndex: null,
+    boundStack: session.boundStack ?? [],
+    pending,
     lastPlacement: session.lastPlacement ?? null,
     phase: "inserting",
+  });
+}
+
+/**
+ * Park the current candidate and open a different one (variety between titles).
+ * @param {SortSession} session
+ * @param {Book[]} books
+ * @returns {SortSession}
+ */
+function rotateCandidate(session, books) {
+  if (!session.candidateId) return session;
+  const pending = {
+    ...(session.pending ?? {}),
+    [session.candidateId]: { low: session.low, high: session.high },
   };
+  return beginNextCandidate(
+    {
+      ...session,
+      pending,
+      candidateId: null,
+      pivotIndex: null,
+    },
+    books,
+    session.candidateId
+  );
 }
 
 /**
@@ -175,20 +341,28 @@ function beginNextCandidate(session, books) {
  * @returns {SortSession}
  */
 export function syncSessionWithBooks(session, books) {
+  const normalized = normalizeSession(session);
   const ids = new Set(books.map((b) => b.id));
-  const rankedIds = session.rankedIds.filter((id) => ids.has(id));
+  const rankedIds = normalized.rankedIds.filter((id) => ids.has(id));
+  const pending = Object.fromEntries(
+    Object.entries(normalized.pending ?? {}).filter(([id]) => ids.has(id))
+  );
 
   if (rankedIds.length === 0 && books.length > 0) {
     return createSortSession(books);
   }
 
   let next = {
-    ...session,
+    ...normalized,
     rankedIds,
+    pending,
   };
 
   if (next.candidateId && !ids.has(next.candidateId)) {
-    next = beginNextCandidate({ ...next, candidateId: null, boundStack: [] }, books);
+    next = beginNextCandidate(
+      { ...next, candidateId: null, boundStack: [], pivotIndex: null },
+      books
+    );
   } else if (next.candidateId) {
     next = {
       ...next,
@@ -198,19 +372,30 @@ export function syncSessionWithBooks(session, books) {
     if (next.low > next.high) {
       next = { ...next, low: next.high };
     }
-    // Range collapsed after a library change — finish placing the candidate.
     if (next.low >= next.high && next.candidateId) {
       const rankedIdsWithCandidate = [...next.rankedIds];
       rankedIdsWithCandidate.splice(next.low, 0, next.candidateId);
-      next = beginNextCandidate({
-        rankedIds: rankedIdsWithCandidate,
-        candidateId: null,
-        low: 0,
-        high: 0,
-        boundStack: [],
-        lastPlacement: null,
-        phase: "inserting",
-      }, books);
+      const { [next.candidateId]: _drop, ...restPending } = next.pending;
+      next = beginNextCandidate(
+        {
+          rankedIds: rankedIdsWithCandidate,
+          candidateId: null,
+          low: 0,
+          high: 0,
+          pivotIndex: null,
+          boundStack: [],
+          pending: restPending,
+          lastPlacement: null,
+          phase: "inserting",
+        },
+        books
+      );
+    } else if (
+      next.pivotIndex == null ||
+      next.pivotIndex < next.low ||
+      next.pivotIndex >= next.high
+    ) {
+      next = withFreshPivot(next);
     }
   } else if (next.phase !== "done") {
     next = beginNextCandidate(next, books);
@@ -225,7 +410,8 @@ export function syncSessionWithBooks(session, books) {
 }
 
 /**
- * Current matchup: candidate vs midpoint of the remaining insertion range.
+ * Current matchup: candidate vs the session pivot inside the insertion range.
+ * Pair order is shuffled so the same title is not always on the left.
  * @param {SortSession} session
  * @param {Book[]} books
  * @returns {[Book, Book] | null}
@@ -234,12 +420,38 @@ export function pickPairFromSession(session, books) {
   if (session.phase !== "inserting" || !session.candidateId) return null;
   if (session.low >= session.high) return null;
 
-  const mid = Math.floor((session.low + session.high) / 2);
-  const opponentId = session.rankedIds[mid];
+  const pivot =
+    session.pivotIndex != null &&
+    session.pivotIndex >= session.low &&
+    session.pivotIndex < session.high
+      ? session.pivotIndex
+      : null;
+  if (pivot == null) return null;
+
+  const opponentId = session.rankedIds[pivot];
   const candidate = books.find((b) => b.id === session.candidateId);
   const opponent = books.find((b) => b.id === opponentId);
   if (!candidate || !opponent) return null;
+
   return [candidate, opponent];
+}
+
+/**
+ * Ensure the session has a valid pivot before showing/recording a matchup.
+ * @param {SortSession} session
+ * @returns {SortSession}
+ */
+export function ensureMatchupPivot(session) {
+  if (session.phase !== "inserting" || !session.candidateId) return session;
+  if (session.low >= session.high) return session;
+  if (
+    session.pivotIndex != null &&
+    session.pivotIndex >= session.low &&
+    session.pivotIndex < session.high
+  ) {
+    return session;
+  }
+  return withFreshPivot(session);
 }
 
 /**
@@ -272,33 +484,57 @@ export function applyInsertionPick(session, winnerId, books) {
     return noop;
   }
 
-  const mid = Math.floor((session.low + session.high) / 2);
-  const opponentId = session.rankedIds[mid];
+  const pivot =
+    session.pivotIndex != null &&
+    session.pivotIndex >= session.low &&
+    session.pivotIndex < session.high
+      ? session.pivotIndex
+      : Math.floor((session.low + session.high) / 2);
+  const opponentId = session.rankedIds[pivot];
   const candidateId = session.candidateId;
   const boundsBefore = { low: session.low, high: session.high };
 
-  const boundStack = [...session.boundStack, boundsBefore];
+  const boundStack = [
+    ...session.boundStack,
+    {
+      low: session.low,
+      high: session.high,
+      pivotIndex: session.pivotIndex,
+      candidateId: session.candidateId,
+      pending: { ...(session.pending ?? {}) },
+    },
+  ];
   let low = session.low;
   let high = session.high;
 
-  // Ranked is best → worst. If candidate wins, it belongs at or above mid.
+  // Ranked is best → worst. If candidate wins, it belongs at or above pivot.
   if (winnerId === candidateId) {
-    high = mid;
+    high = pivot;
   } else if (winnerId === opponentId) {
-    low = mid + 1;
+    low = pivot + 1;
   } else {
     return noop;
   }
 
   if (low < high) {
+    let nextSession = withFreshPivot({
+      ...session,
+      low,
+      high,
+      boundStack,
+      lastPlacement: null,
+    });
+
+    // Jump to another title often so the slate doesn't feel stuck on one book
+    const unrankedCount = books.filter(
+      (b) => !session.rankedIds.includes(b.id)
+    ).length;
+    if (Math.random() < ROTATE_CANDIDATE_CHANCE && unrankedCount > 1) {
+      nextSession = rotateCandidate(nextSession, books);
+    }
+
     return {
-      session: {
-        ...session,
-        low,
-        high,
-        boundStack,
-        lastPlacement: null,
-      },
+      session: nextSession,
       placed: false,
       placedId: null,
       placementIndex: -1,
@@ -310,6 +546,8 @@ export function applyInsertionPick(session, winnerId, books) {
   const rankedIdsBefore = [...session.rankedIds];
   const rankedIds = [...session.rankedIds];
   rankedIds.splice(low, 0, candidateId);
+  const pending = { ...(session.pending ?? {}) };
+  delete pending[candidateId];
 
   /** @type {PlacementUndo} */
   const lastPlacement = {
@@ -320,15 +558,20 @@ export function applyInsertionPick(session, winnerId, books) {
     priorRatings: [],
   };
 
-  const placedSession = beginNextCandidate({
-    rankedIds,
-    candidateId: null,
-    low: 0,
-    high: 0,
-    boundStack: [],
-    lastPlacement,
-    phase: "inserting",
-  }, books);
+  const placedSession = beginNextCandidate(
+    {
+      rankedIds,
+      candidateId: null,
+      low: 0,
+      high: 0,
+      pivotIndex: null,
+      boundStack: [],
+      pending,
+      lastPlacement,
+      phase: "inserting",
+    },
+    books
+  );
 
   return {
     session: placedSession,
@@ -341,39 +584,39 @@ export function applyInsertionPick(session, winnerId, books) {
 }
 
 /**
- * Skip the current candidate; park it at the end of the unranked queue.
+ * Skip the current candidate; park it and open a random other unranked book.
  * @param {SortSession} session
  * @param {Book[]} books
  * @returns {SortSession}
  */
 export function skipCandidate(session, books) {
   if (!session.candidateId) return session;
-  const skippedId = session.candidateId;
-  const rankedSet = new Set(session.rankedIds);
-  const rest = books
-    .filter((b) => !rankedSet.has(b.id) && b.id !== skippedId)
-    .map((b) => b.id);
-  // Rotate: try others first, then come back to skipped
-  const orderHint = [...rest, skippedId];
-  const nextId = orderHint[0];
-  if (!nextId || nextId === skippedId) {
-    // Only this book left unranked — keep trying it (skip matchup instead)
-    return {
+  const pending = {
+    ...(session.pending ?? {}),
+    [session.candidateId]: { low: session.low, high: session.high },
+  };
+  const next = beginNextCandidate(
+    {
+      ...session,
+      pending,
+      candidateId: null,
+      boundStack: [],
+      pivotIndex: null,
+    },
+    books,
+    session.candidateId
+  );
+  // If only one book left, reset its search range for a fresh attempt
+  if (next.candidateId === session.candidateId) {
+    return withFreshPivot({
       ...session,
       low: 0,
       high: session.rankedIds.length,
       boundStack: [],
-    };
+      pending: session.pending ?? {},
+    });
   }
-  return {
-    rankedIds: session.rankedIds,
-    candidateId: nextId,
-    low: 0,
-    high: session.rankedIds.length,
-    boundStack: [],
-    lastPlacement: null,
-    phase: "inserting",
-  };
+  return next;
 }
 
 /**
@@ -387,13 +630,17 @@ export function undoInsertionStep(session) {
     const prev = boundStack.pop();
     if (!prev) return null;
     return {
-      session: {
+      session: withFreshPivot({
         ...session,
+        candidateId: prev.candidateId ?? session.candidateId,
         low: prev.low,
         high: prev.high,
+        pivotIndex: prev.pivotIndex ?? null,
+        pending: prev.pending ?? session.pending ?? {},
         boundStack,
         lastPlacement: null,
-      },
+        phase: "inserting",
+      }),
       kind: "bound",
     };
   }
@@ -402,15 +649,17 @@ export function undoInsertionStep(session) {
   if (!placement) return null;
 
   return {
-    session: {
+    session: withFreshPivot({
       rankedIds: placement.rankedIdsBefore,
       candidateId: placement.bookId,
       low: placement.low,
       high: placement.high,
+      pivotIndex: null,
       boundStack: [],
+      pending: session.pending ?? {},
       lastPlacement: null,
       phase: "inserting",
-    },
+    }),
     kind: "placement",
   };
 }
@@ -540,11 +789,11 @@ export function loadSortSession(books) {
   try {
     const raw = sessionStorage.getItem(SESSION_KEY);
     if (!raw) return createSortSession(books);
-    const parsed = /** @type {SortSession} */ (JSON.parse(raw));
+    const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.rankedIds)) {
       return createSortSession(books);
     }
-    return syncSessionWithBooks(parsed, books);
+    return syncSessionWithBooks(normalizeSession(parsed), books);
   } catch {
     return createSortSession(books);
   }
