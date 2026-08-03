@@ -7,6 +7,8 @@
   --phone-w: 22.5rem;
   --phone-h: 46rem;
   --phone-radius: 2.4rem;
+  /* Typical trade paperback / hardcover jacket */
+  --cover-ratio: 2 / 3;
 }
 
 * {
@@ -396,6 +398,9 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.75rem;
+  align-items: end;
+  align-content: center;
+  justify-items: center;
   padding: 0.35rem 0.95rem 0;
   flex: 1;
   min-height: 0;
@@ -408,8 +413,10 @@ body {
   padding: 0;
   margin: 0;
   width: 100%;
-  height: 100%;
-  min-height: 0;
+  max-width: 11.5rem;
+  height: auto;
+  aspect-ratio: var(--cover-ratio);
+  max-height: 100%;
   border-radius: 1.5rem;
   overflow: hidden;
   cursor: pointer;
@@ -429,6 +436,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center top;
 }
 
 .soft-card-fade {
@@ -508,6 +516,8 @@ body {
   grid-template-columns: 1fr 1fr;
   gap: 0.65rem;
   align-items: end;
+  align-content: end;
+  justify-items: center;
   padding: 0.55rem 0.85rem 0;
   flex: 1;
   min-height: 0;
@@ -520,7 +530,8 @@ body {
   padding: 0;
   margin: 0;
   width: 100%;
-  height: 100%;
+  max-width: 10.5rem;
+  height: auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -540,9 +551,10 @@ body {
   position: relative;
   display: block;
   width: 100%;
-  flex: 1;
-  min-height: 0;
-  aspect-ratio: auto;
+  flex: 0 0 auto;
+  height: auto;
+  aspect-ratio: var(--cover-ratio);
+  max-height: min(100%, 22rem);
   border-radius: 2px 5px 5px 2px;
   background: #9aabbc;
   box-shadow: 6px 12px 22px rgba(20, 32, 51, 0.22);
@@ -555,6 +567,7 @@ body {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center top;
   border-radius: 2px 4px 4px 2px;
   background: linear-gradient(160deg, #b7c5d3, #7f93a8);
 }
