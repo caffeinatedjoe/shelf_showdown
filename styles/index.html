@@ -41,9 +41,9 @@
       </p>
       <ul class="traits">
         <li>Matchup fills ~80% of the screen</li>
-        <li>Cover buttons keep a natural 2∶3 jacket ratio</li>
+        <li>Covers stacked vertically at a natural 2∶3 jacket ratio</li>
         <li>Hamburger menu: Rankings · Stats · Library · Sign out</li>
-        <li>Skip / Undo as quiet text under the covers</li>
+        <li>Swipe left to undo, swipe right to skip — no buttons</li>
         <li>Progress as a small counter only</li>
       </ul>
       <details class="menu-demo">
@@ -64,7 +64,7 @@
             <span class="phone-notch" aria-hidden="true"></span>
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
-          <div class="app-screen soft-screen">
+          <div class="app-screen soft-screen" data-swipe-screen>
             <header class="chrome-bar">
               <button type="button" class="menu-btn soft-menu-btn" aria-label="Open menu">
                 <span></span><span></span><span></span>
@@ -102,10 +102,11 @@
                 </span>
               </button>
             </div>
-            <div class="quiet-actions soft-quiet">
-              <button type="button">Skip</button>
-              <button type="button">Undo</button>
+            <div class="swipe-hint soft-swipe-hint" aria-hidden="true">
+              <span>← Undo</span>
+              <span>Skip →</span>
             </div>
+            <div class="swipe-toast" aria-live="polite" hidden></div>
           </div>
           <div class="phone-home" aria-hidden="true"></div>
         </div>
@@ -125,9 +126,9 @@
       </p>
       <ul class="traits">
         <li>Comparison is the whole product surface</li>
-        <li>Jackets stay book-shaped (2∶3), sitting on the shelf</li>
+        <li>Jackets stacked vertically (2∶3), each on a shelf ledge</li>
         <li>Hamburger holds Rankings / Stats / Library</li>
-        <li>Skip / Undo stay secondary</li>
+        <li>Swipe left to undo, swipe right to skip — no buttons</li>
       </ul>
     </div>
     <div class="stage" aria-label="Face Out phone preview">
@@ -138,7 +139,7 @@
             <span class="phone-notch" aria-hidden="true"></span>
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
-          <div class="app-screen face-screen">
+          <div class="app-screen face-screen" data-swipe-screen>
             <header class="chrome-bar">
               <button type="button" class="menu-btn" aria-label="Open menu">
                 <span></span><span></span><span></span>
@@ -161,6 +162,7 @@
                 <span class="face-title">The Left Hand of Darkness</span>
                 <span class="face-author">Ursula K. Le Guin</span>
               </button>
+              <div class="face-shelf" aria-hidden="true"></div>
               <button type="button" class="face-book" aria-label="Prefer Neuromancer">
                 <span class="face-jacket">
                   <img
@@ -175,12 +177,13 @@
                 <span class="face-title">Neuromancer</span>
                 <span class="face-author">William Gibson</span>
               </button>
+              <div class="face-shelf" aria-hidden="true"></div>
             </div>
-            <div class="face-shelf" aria-hidden="true"></div>
-            <div class="quiet-actions">
-              <button type="button">Skip</button>
-              <button type="button">Undo</button>
+            <div class="swipe-hint" aria-hidden="true">
+              <span>← Undo</span>
+              <span>Skip →</span>
             </div>
+            <div class="swipe-toast" aria-live="polite" hidden></div>
           </div>
           <div class="phone-home" aria-hidden="true"></div>
         </div>
@@ -470,8 +473,8 @@
           </tr>
           <tr>
             <th scope="row">Skip / Undo</th>
-            <td>Quiet</td>
-            <td>Quiet</td>
+            <td>Swipe</td>
+            <td>Swipe</td>
             <td>Quiet</td>
             <td>Quiet</td>
             <td>Quiet</td>
@@ -488,5 +491,6 @@
       Open locally: <code>styles/index.html</code>
     </p>
   </footer>
+  <script src="swipe.js" defer></script>
 </body>
 </html>
