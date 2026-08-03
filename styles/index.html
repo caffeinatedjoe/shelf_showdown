@@ -11,13 +11,13 @@
 </head>
 <body>
   <header class="intro">
-    <p class="intro-kicker">Design exploration · mobile app first</p>
+    <p class="intro-kicker">Design exploration · comparison first</p>
     <h1>Shelf Showdown in your hand</h1>
     <p class="intro-lede">
-      Every direction below is mocked as a phone app — status bar, thumb-zone actions,
-      bottom tabs — not a wide marketing page. Soft Browse follows a pastel travel-app energy with cover cards.
+      You’re here to pick books. Rankings, stats, and library live behind a menu —
+      the screen stays on the matchup. Every concept below follows that rule.
     </p>
-    <p class="intro-note">Tap targets are sized for thumbs. Nothing here is wired to the live app yet.</p>
+    <p class="intro-note">Phone frames only. Nothing here is wired to the live app yet.</p>
   </header>
 
   <nav class="concept-nav" aria-label="Concepts">
@@ -32,20 +32,28 @@
   <!-- 6. SOFT BROWSE -->
   <article id="soft-browse" class="concept concept-featured">
     <div class="concept-meta">
-      <span class="concept-num">06 · new</span>
+      <span class="concept-num">06</span>
       <h2>Soft Browse</h2>
-      <p class="mood">Pastel travel-app · rounded cover cards · floating tabs</p>
+      <p class="mood">Pastel travel-app · rounded covers · menu tucked away</p>
       <p>
-        Soft gradients, generous space, and big jacket cards with title tucked into a bottom fade —
-        the sort screen as a calm explore feed, not a fight poster.
+        Two big jackets. Tiny chrome. Rankings and library sit in the hamburger —
+        no tab bar, no chip row, no tutorial prompt.
       </p>
       <ul class="traits">
-        <li>Mint / lavender / blush washes with deep violet accents</li>
-        <li>Highly rounded cover cards; title + author overlay the jacket foot</li>
-        <li>Serif prompt, Plus Jakarta Sans UI</li>
-        <li>Pill actions + floating white tab bar</li>
-        <li>Motion: cards ease up; active tab gently scales</li>
+        <li>Matchup fills ~80% of the screen</li>
+        <li>Hamburger menu: Rankings · Stats · Library · Sign out</li>
+        <li>Skip / Undo as quiet text under the covers</li>
+        <li>Progress as a small counter only</li>
       </ul>
+      <details class="menu-demo">
+        <summary>What’s in the menu</summary>
+        <ul>
+          <li>Rankings</li>
+          <li>Stats</li>
+          <li>Library</li>
+          <li>Sign out</li>
+        </ul>
+      </details>
     </div>
     <div class="stage" aria-label="Soft Browse phone preview">
       <div class="phone phone-soft">
@@ -56,19 +64,14 @@
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
           <div class="app-screen soft-screen">
-            <header class="soft-top">
-              <div>
-                <p class="soft-kicker">Shelf Showdown</p>
-                <h3 class="soft-heading">Which stays higher?</h3>
-              </div>
-              <span class="soft-progress">3 / 9</span>
+            <header class="chrome-bar">
+              <button type="button" class="menu-btn soft-menu-btn" aria-label="Open menu">
+                <span></span><span></span><span></span>
+              </button>
+              <p class="chrome-brand soft-chrome-brand">Shelf Showdown</p>
+              <span class="chrome-count soft-count">3/9</span>
             </header>
-            <div class="soft-chips" aria-hidden="true">
-              <span class="soft-chip soft-chip-mint">Sort</span>
-              <span class="soft-chip soft-chip-lilac">Covers</span>
-              <span class="soft-chip soft-chip-blush">Your shelf</span>
-            </div>
-            <div class="soft-matchup">
+            <div class="soft-matchup soft-matchup-focus">
               <button type="button" class="soft-card" aria-label="Prefer The Left Hand of Darkness">
                 <img
                   src="https://covers.openlibrary.org/b/isbn/0441478123-L.jpg"
@@ -98,28 +101,10 @@
                 </span>
               </button>
             </div>
-            <div class="soft-actions">
-              <button type="button" class="soft-pill soft-pill-primary">Skip book</button>
-              <button type="button" class="soft-pill soft-pill-ghost">Undo</button>
+            <div class="quiet-actions soft-quiet">
+              <button type="button">Skip</button>
+              <button type="button">Undo</button>
             </div>
-            <nav class="soft-tabbar" aria-label="App tabs">
-              <span class="soft-tab active">
-                <span class="soft-tab-icon" aria-hidden="true">◎</span>
-                Sort
-              </span>
-              <span class="soft-tab">
-                <span class="soft-tab-icon" aria-hidden="true">☰</span>
-                Ranks
-              </span>
-              <span class="soft-tab">
-                <span class="soft-tab-icon" aria-hidden="true">✧</span>
-                Stats
-              </span>
-              <span class="soft-tab">
-                <span class="soft-tab-icon" aria-hidden="true">▢</span>
-                Library
-              </span>
-            </nav>
           </div>
           <div class="phone-home" aria-hidden="true"></div>
         </div>
@@ -132,16 +117,15 @@
     <div class="concept-meta">
       <span class="concept-num">05</span>
       <h2>Face Out</h2>
-      <p class="mood">Phone shelf · jacket art first · one-thumb picks</p>
+      <p class="mood">Phone shelf · jackets only · quiet chrome</p>
       <p>
-        A native-feeling sort screen: big covers you tap, title under each jacket,
-        progress in the top bar, Skip/Undo in the thumb zone, tabs along the bottom.
+        Covers on a shelf ledge. No prompt, no tabs — just pick a book.
+        Everything else is behind the menu.
       </p>
       <ul class="traits">
-        <li>Phone chrome + home indicator — reads as an app, not a site</li>
-        <li>Covers fill the screen; title/author never cover the art</li>
-        <li>Bottom tab bar: Sort · Rankings · Stats · Library</li>
-        <li>Motion: cover lifts toward you on press</li>
+        <li>Comparison is the whole product surface</li>
+        <li>Hamburger holds Rankings / Stats / Library</li>
+        <li>Skip / Undo stay secondary</li>
       </ul>
     </div>
     <div class="stage" aria-label="Face Out phone preview">
@@ -153,12 +137,14 @@
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
           <div class="app-screen face-screen">
-            <header class="app-topbar">
-              <p class="app-brand">Shelf Showdown</p>
-              <p class="app-progress">3 / 9</p>
+            <header class="chrome-bar">
+              <button type="button" class="menu-btn" aria-label="Open menu">
+                <span></span><span></span><span></span>
+              </button>
+              <p class="chrome-brand">Shelf Showdown</p>
+              <span class="chrome-count">3/9</span>
             </header>
-            <p class="app-prompt">Which stays higher?</p>
-            <div class="face-matchup">
+            <div class="face-matchup face-matchup-focus">
               <button type="button" class="face-book" aria-label="Prefer The Left Hand of Darkness">
                 <span class="face-jacket">
                   <img
@@ -189,16 +175,10 @@
               </button>
             </div>
             <div class="face-shelf" aria-hidden="true"></div>
-            <div class="thumb-actions">
-              <button type="button" class="thumb-btn">Skip</button>
-              <button type="button" class="thumb-btn thumb-btn-quiet">Undo</button>
+            <div class="quiet-actions">
+              <button type="button">Skip</button>
+              <button type="button">Undo</button>
             </div>
-            <nav class="tabbar" aria-label="App tabs">
-              <span class="tabbar-item active">Sort</span>
-              <span class="tabbar-item">Ranks</span>
-              <span class="tabbar-item">Stats</span>
-              <span class="tabbar-item">Library</span>
-            </nav>
           </div>
           <div class="phone-home" aria-hidden="true"></div>
         </div>
@@ -211,15 +191,15 @@
     <div class="concept-meta">
       <span class="concept-num">01</span>
       <h2>Ring Round</h2>
-      <p class="mood">Carnival bout · poster ink · mustard &amp; brick</p>
+      <p class="mood">Carnival bout · posters only</p>
       <p>
-        Same fight-night energy, packed into a phone: stacked corner posters,
-        stamped VS between taps, Skip/Undo in the thumb zone.
+        Two corner posters and a stamped VS. Menu replaces the old tab strip —
+        the bout stays center stage.
       </p>
       <ul class="traits">
-        <li>Vertical bout cards sized for one-hand scrolling</li>
-        <li>Mustard / brick — no purple, no neon glow</li>
-        <li>Motion: posters slap in, VS stamps down</li>
+        <li>Stacked fight cards fill the phone</li>
+        <li>Secondary nav in the menu</li>
+        <li>Skip / Undo stay quiet</li>
       </ul>
     </div>
     <div class="stage" aria-label="Ring Round phone preview">
@@ -231,12 +211,14 @@
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
           <div class="app-screen ring-screen">
-            <header class="app-topbar app-topbar-on-dark">
-              <p class="app-brand ring-brand-inline">Shelf Showdown</p>
-              <p class="app-progress">3 / 9</p>
+            <header class="chrome-bar chrome-bar-on-dark">
+              <button type="button" class="menu-btn menu-btn-light" aria-label="Open menu">
+                <span></span><span></span><span></span>
+              </button>
+              <p class="chrome-brand ring-brand-inline">Shelf Showdown</p>
+              <span class="chrome-count ring-count">3/9</span>
             </header>
-            <p class="ring-tag">Tonight’s bout</p>
-            <div class="ring-matchup">
+            <div class="ring-matchup ring-matchup-focus">
               <button type="button" class="ring-card ring-card-a">
                 <span class="ring-corner">Red corner</span>
                 <span class="ring-title">The Left Hand of Darkness</span>
@@ -249,16 +231,10 @@
                 <span class="ring-author">William Gibson</span>
               </button>
             </div>
-            <div class="thumb-actions">
-              <button type="button" class="thumb-btn ring-thumb">Skip</button>
-              <button type="button" class="thumb-btn thumb-btn-quiet ring-thumb-quiet">Undo</button>
+            <div class="quiet-actions quiet-actions-on-dark">
+              <button type="button">Skip</button>
+              <button type="button">Undo</button>
             </div>
-            <nav class="tabbar tabbar-dark" aria-label="App tabs">
-              <span class="tabbar-item active">Sort</span>
-              <span class="tabbar-item">Ranks</span>
-              <span class="tabbar-item">Stats</span>
-              <span class="tabbar-item">Library</span>
-            </nav>
           </div>
           <div class="phone-home phone-home-light" aria-hidden="true"></div>
         </div>
@@ -271,15 +247,15 @@
     <div class="concept-meta">
       <span class="concept-num">02</span>
       <h2>Stack Attack</h2>
-      <p class="mood">Tabletop game night · felt green · chunky tokens</p>
+      <p class="mood">Felt table · token cards · HUD slimmed down</p>
       <p>
-        Felt play mat as a full-screen phone app. Token cards stack for thumbs;
-        turn chip lives in the top bar like a game HUD.
+        Deal two tokens and pick. Turn count stays; the rest of the game
+        HUD and bottom tabs are gone.
       </p>
       <ul class="traits">
-        <li>Full-bleed felt inside the device frame</li>
-        <li>Tall token cards, coral primary in the thumb zone</li>
-        <li>Motion: cards deal in and bounce on pick</li>
+        <li>Matchup cards dominate the felt</li>
+        <li>Menu for Rankings / Stats / Library</li>
+        <li>Quiet Skip / Undo</li>
       </ul>
     </div>
     <div class="stage" aria-label="Stack Attack phone preview">
@@ -291,12 +267,14 @@
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
           <div class="app-screen stack-screen">
-            <header class="app-topbar app-topbar-on-dark">
-              <p class="app-brand stack-brand-inline">Shelf Showdown</p>
-              <span class="stack-chip">Turn 4</span>
+            <header class="chrome-bar chrome-bar-on-dark">
+              <button type="button" class="menu-btn menu-btn-light" aria-label="Open menu">
+                <span></span><span></span><span></span>
+              </button>
+              <p class="chrome-brand stack-brand-inline">Shelf Showdown</p>
+              <span class="stack-chip">4</span>
             </header>
-            <p class="stack-prompt">Which stays higher?</p>
-            <div class="stack-matchup">
+            <div class="stack-matchup stack-matchup-focus">
               <button type="button" class="stack-card">
                 <span class="stack-spine"></span>
                 <span class="stack-title">Circe</span>
@@ -309,16 +287,10 @@
                 <span class="stack-author">Susanna Clarke</span>
               </button>
             </div>
-            <div class="thumb-actions">
-              <button type="button" class="thumb-btn stack-thumb">Skip</button>
-              <button type="button" class="thumb-btn thumb-btn-quiet stack-thumb-quiet">Undo</button>
+            <div class="quiet-actions quiet-actions-on-dark">
+              <button type="button">Skip</button>
+              <button type="button">Undo</button>
             </div>
-            <nav class="tabbar tabbar-dark" aria-label="App tabs">
-              <span class="tabbar-item active">Sort</span>
-              <span class="tabbar-item">Ranks</span>
-              <span class="tabbar-item">Stats</span>
-              <span class="tabbar-item">Library</span>
-            </nav>
           </div>
           <div class="phone-home phone-home-light" aria-hidden="true"></div>
         </div>
@@ -331,15 +303,15 @@
     <div class="concept-meta">
       <span class="concept-num">03</span>
       <h2>Zine Fight</h2>
-      <p class="mood">Photocopied DIY · highlighter slash · crooked cutouts</p>
+      <p class="mood">Pocket zine · cutouts only</p>
       <p>
-        A pocket zine app: cutout panels stacked for one-handed picks,
-        highlighter brand, tape corners — still phone chrome, not a desktop paste-up.
+        Two taped panels. No lede, no tab strip — cut one, keep one.
+        Menu holds the occasional stuff.
       </p>
       <ul class="traits">
-        <li>Stacked cutouts fill the phone body</li>
-        <li>Ink + highlighter, tomato accent</li>
-        <li>Motion: cutouts flutter in</li>
+        <li>Cutouts fill the page</li>
+        <li>Hamburger for Rankings / Stats / Library</li>
+        <li>Skip / Undo as footnote links</li>
       </ul>
     </div>
     <div class="stage" aria-label="Zine Fight phone preview">
@@ -351,19 +323,21 @@
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
           <div class="app-screen zine-screen">
-            <header class="app-topbar">
-              <p class="app-brand zine-brand-inline">Shelf <span>Showdown</span></p>
-              <p class="app-progress">3 / 9</p>
+            <header class="chrome-bar">
+              <button type="button" class="menu-btn" aria-label="Open menu">
+                <span></span><span></span><span></span>
+              </button>
+              <p class="chrome-brand zine-brand-inline">Shelf <span>Showdown</span></p>
+              <span class="chrome-count">3/9</span>
             </header>
-            <p class="zine-lede">Cut one. Keep one.</p>
-            <div class="zine-matchup">
+            <div class="zine-matchup zine-matchup-focus">
               <button type="button" class="zine-clip zine-clip-a">
                 <span class="zine-tape"></span>
                 <span class="zine-label">A</span>
                 <span class="zine-title">Klara and the Sun</span>
                 <span class="zine-author">Kazuo Ishiguro</span>
               </button>
-              <span class="zine-vs">pick one</span>
+              <span class="zine-vs">or</span>
               <button type="button" class="zine-clip zine-clip-b">
                 <span class="zine-tape zine-tape-b"></span>
                 <span class="zine-label">B</span>
@@ -371,16 +345,10 @@
                 <span class="zine-author">Kazuo Ishiguro</span>
               </button>
             </div>
-            <div class="thumb-actions">
-              <button type="button" class="thumb-btn zine-thumb">Skip</button>
-              <button type="button" class="thumb-btn thumb-btn-quiet">Undo</button>
+            <div class="quiet-actions">
+              <button type="button">Skip</button>
+              <button type="button">Undo</button>
             </div>
-            <nav class="tabbar" aria-label="App tabs">
-              <span class="tabbar-item active">Sort</span>
-              <span class="tabbar-item">Ranks</span>
-              <span class="tabbar-item">Stats</span>
-              <span class="tabbar-item">Library</span>
-            </nav>
           </div>
           <div class="phone-home" aria-hidden="true"></div>
         </div>
@@ -393,15 +361,15 @@
     <div class="concept-meta">
       <span class="concept-num">04</span>
       <h2>Late Fee</h2>
-      <p class="mood">Playful library desk · stamp pad · seafoam &amp; ink</p>
+      <p class="mood">Checkout desk · cards only</p>
       <p>
-        Checkout-desk humor as a compact phone app: stacked cards,
-        stamp accent in the top bar, renew/skip in the thumb zone.
+        Two checkout cards. No stamp banner, no floating tabs —
+        renew one with a tap; menu for the rest.
       </p>
       <ul class="traits">
-        <li>Seafoam field inside the device</li>
-        <li>Stacked checkout cards for thumbs</li>
-        <li>Motion: stamp thump on pick</li>
+        <li>Stacked cards dominate</li>
+        <li>Menu for Rankings / Stats / Library</li>
+        <li>Quiet Skip / Undo</li>
       </ul>
     </div>
     <div class="stage" aria-label="Late Fee phone preview">
@@ -413,19 +381,21 @@
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
           <div class="app-screen late-screen">
-            <header class="app-topbar">
-              <p class="app-brand late-brand-inline">Shelf Showdown</p>
-              <span class="late-stamp">Desk</span>
+            <header class="chrome-bar">
+              <button type="button" class="menu-btn" aria-label="Open menu">
+                <span></span><span></span><span></span>
+              </button>
+              <p class="chrome-brand late-brand-inline">Shelf Showdown</p>
+              <span class="chrome-count late-count">3/9</span>
             </header>
-            <p class="late-prompt">Which renews higher?</p>
-            <div class="late-matchup">
+            <div class="late-matchup late-matchup-focus">
               <button type="button" class="late-card">
                 <span class="late-barcode"></span>
                 <span class="late-title">Project Hail Mary</span>
                 <span class="late-author">Andy Weir</span>
                 <span class="late-due">Due: your heart</span>
               </button>
-              <span class="late-vs">renew?</span>
+              <span class="late-vs">or</span>
               <button type="button" class="late-card">
                 <span class="late-barcode late-barcode-b"></span>
                 <span class="late-title">The Martian</span>
@@ -433,16 +403,10 @@
                 <span class="late-due">Due: yesterday</span>
               </button>
             </div>
-            <div class="thumb-actions">
-              <button type="button" class="thumb-btn late-thumb">Skip</button>
-              <button type="button" class="thumb-btn thumb-btn-quiet">Undo</button>
+            <div class="quiet-actions">
+              <button type="button">Skip</button>
+              <button type="button">Undo</button>
             </div>
-            <nav class="tabbar" aria-label="App tabs">
-              <span class="tabbar-item active">Sort</span>
-              <span class="tabbar-item">Ranks</span>
-              <span class="tabbar-item">Stats</span>
-              <span class="tabbar-item">Library</span>
-            </nav>
           </div>
           <div class="phone-home" aria-hidden="true"></div>
         </div>
@@ -451,7 +415,7 @@
   </article>
 
   <section class="compare-table">
-    <h2>Mobile app checklist</h2>
+    <h2>Simplified chrome</h2>
     <div class="table-wrap">
       <table>
         <thead>
@@ -467,49 +431,49 @@
         </thead>
         <tbody>
           <tr>
-            <th scope="row">Device frame</th>
-            <td>Phone</td>
-            <td>Phone</td>
-            <td>Phone</td>
-            <td>Phone</td>
-            <td>Phone</td>
-            <td>Phone</td>
+            <th scope="row">Focus</th>
+            <td>Covers</td>
+            <td>Covers</td>
+            <td>Posters</td>
+            <td>Tokens</td>
+            <td>Cutouts</td>
+            <td>Cards</td>
           </tr>
           <tr>
-            <th scope="row">Primary tap</th>
-            <td>Rounded cover</td>
-            <td>Cover</td>
-            <td>Poster card</td>
-            <td>Token card</td>
-            <td>Cutout</td>
-            <td>Checkout card</td>
+            <th scope="row">Prompt / chips</th>
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
+            <td>None</td>
           </tr>
           <tr>
-            <th scope="row">Thumb zone</th>
-            <td>Pill Skip / Undo</td>
-            <td>Skip / Undo</td>
-            <td>Skip / Undo</td>
-            <td>Skip / Undo</td>
-            <td>Skip / Undo</td>
-            <td>Skip / Undo</td>
+            <th scope="row">Secondary nav</th>
+            <td>Hamburger</td>
+            <td>Hamburger</td>
+            <td>Hamburger</td>
+            <td>Hamburger</td>
+            <td>Hamburger</td>
+            <td>Hamburger</td>
           </tr>
           <tr>
             <th scope="row">Tab bar</th>
-            <td>Floating</td>
-            <td>Yes</td>
-            <td>Yes</td>
-            <td>Yes</td>
-            <td>Yes</td>
-            <td>Yes</td>
+            <td>Removed</td>
+            <td>Removed</td>
+            <td>Removed</td>
+            <td>Removed</td>
+            <td>Removed</td>
+            <td>Removed</td>
           </tr>
           <tr>
-            <th scope="row">Best if…</th>
-            <td>Soft product UI</td>
-            <td>Quiet jackets</td>
-            <td>Spectacle</td>
-            <td>Cozy play</td>
-            <td>Attitude</td>
-            <td>Warmth</td>
+            <th scope="row">Skip / Undo</th>
+            <td>Quiet</td>
+            <td>Quiet</td>
+            <td>Quiet</td>
+            <td>Quiet</td>
+            <td>Quiet</td>
+            <td>Quiet</td>
           </tr>
         </tbody>
       </table>
@@ -518,7 +482,7 @@
 
   <footer class="outro">
     <p>
-      Newest: <strong>Soft Browse</strong> — pastel travel-app softness with cover cards and a floating tab bar.
+      Rule of thumb: if it isn’t the matchup, it waits in the menu.
       Open locally: <code>styles/index.html</code>
     </p>
   </footer>
