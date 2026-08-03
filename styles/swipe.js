@@ -1,6 +1,6 @@
 (() => {
-  const THRESHOLD = 56;
-  const ANGLE_RATIO = 1.15;
+  const THRESHOLD = 40;
+  const ANGLE_RATIO = 1.05;
 
   /**
    * Swipe left → undo, swipe right → skip.
@@ -12,6 +12,8 @@
     let startY = 0;
     let tracking = false;
     let pointerId = null;
+    let lastX = 0;
+    let lastY = 0;
     let toastTimer = 0;
 
     function clearSwipeClass() {
@@ -25,49 +27,35 @@
       toast.textContent = action === "undo" ? "Undo" : "Skip";
       toast.classList.toggle("is-undo", action === "undo");
       toast.classList.toggle("is-skip", action === "skip");
+      void toast.offsetWidth;
       toast.classList.add("is-visible");
       toastTimer = window.setTimeout(() => {
         toast.classList.remove("is-visible");
         toastTimer = window.setTimeout(() => {
           toast.hidden = true;
-        }, 200);
-      }, 700);
+        }, 220);
+      }, 850);
     }
 
-    function onPointerDown(event) {
-      if (event.button != null && event.button !== 0) return;
-      if (event.target.closest(".menu-btn")) return;
-      tracking = true;
-      pointerId = event.pointerId;
-      startX = event.clientX;
-      startY = event.clientY;
-      try {
-        screen.setPointerCapture(event.pointerId);
-      } catch {
-        /* ignore */
-      }
-    }
-
-    function onPointerMove(event) {
-      if (!tracking || event.pointerId !== pointerId) return;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
+    function updateSwipeClass(dx, dy) {
       clearSwipeClass();
-      if (Math.abs(dx) < 18 || Math.abs(dx) < Math.abs(dy) * ANGLE_RATIO) return;
+      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * ANGLE_RATIO) return;
       screen.classList.add(dx < 0 ? "is-swiping-left" : "is-swiping-right");
     }
 
-    function onPointerUp(event) {
-      if (!tracking || event.pointerId !== pointerId) return;
+    function detachDocListeners() {
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
+      document.removeEventListener("pointercancel", onPointerCancel);
+    }
+
+    function finishSwipe() {
+      if (!tracking) return;
       tracking = false;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
+      detachDocListeners();
+      const dx = lastX - startX;
+      const dy = lastY - startY;
       clearSwipeClass();
-      try {
-        screen.releasePointerCapture(event.pointerId);
-      } catch {
-        /* ignore */
-      }
       pointerId = null;
 
       if (Math.abs(dx) < THRESHOLD || Math.abs(dx) < Math.abs(dy) * ANGLE_RATIO) {
@@ -78,17 +66,42 @@
       showToast(dx < 0 ? "undo" : "skip");
     }
 
+    function onPointerMove(event) {
+      if (!tracking || (pointerId != null && event.pointerId !== pointerId)) return;
+      lastX = event.clientX;
+      lastY = event.clientY;
+      updateSwipeClass(lastX - startX, lastY - startY);
+    }
+
+    function onPointerUp(event) {
+      if (!tracking || (pointerId != null && event.pointerId !== pointerId)) return;
+      const upDx = Math.abs(event.clientX - startX);
+      const lastDx = Math.abs(lastX - startX);
+      if (upDx >= lastDx) {
+        lastX = event.clientX;
+        lastY = event.clientY;
+      }
+      finishSwipe();
+    }
+
     function onPointerCancel(event) {
-      if (event.pointerId !== pointerId) return;
-      tracking = false;
-      pointerId = null;
-      clearSwipeClass();
+      if (pointerId != null && event.pointerId !== pointerId) return;
+      finishSwipe();
+    }
+
+    function onPointerDown(event) {
+      if (event.button != null && event.button !== 0) return;
+      if (event.target.closest(".menu-btn")) return;
+      tracking = true;
+      pointerId = event.pointerId;
+      startX = lastX = event.clientX;
+      startY = lastY = event.clientY;
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+      document.addEventListener("pointercancel", onPointerCancel);
     }
 
     screen.addEventListener("pointerdown", onPointerDown);
-    screen.addEventListener("pointermove", onPointerMove);
-    screen.addEventListener("pointerup", onPointerUp);
-    screen.addEventListener("pointercancel", onPointerCancel);
   }
 
   document.querySelectorAll("[data-swipe-screen]").forEach(bindSwipeScreen);

@@ -438,6 +438,9 @@ body {
   height: 100%;
   object-fit: cover;
   object-position: center top;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .soft-card-fade {
@@ -567,6 +570,9 @@ body {
   object-position: center top;
   border-radius: 2px 4px 4px 2px;
   background: linear-gradient(160deg, #b7c5d3, #7f93a8);
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .face-edge {
