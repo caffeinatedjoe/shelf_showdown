@@ -15,13 +15,14 @@
     <h1>Shelf Showdown in your hand</h1>
     <p class="intro-lede">
       You’re here to pick books. Rankings, stats, and library live behind a menu —
-      the screen stays on the matchup. Every concept below follows that rule —
-      except Head to Head, which explores a fuller vote-arena chrome from a product mock.
+      the screen stays on the matchup. Handful explores ranking five at once;
+      Head to Head explores a fuller vote-arena chrome. The rest stay on pairwise picks.
     </p>
-    <p class="intro-note">Phone frames only. Nothing here is wired to the live app yet.</p>
+    <p class="intro-note">Phone frames only. Handful is interactive; the rest are visual mocks — nothing is wired to the live app yet.</p>
   </header>
 
   <nav class="concept-nav" aria-label="Concepts">
+    <a href="#handful">8 · Handful</a>
     <a href="#head-to-head">7 · Head to Head</a>
     <a href="#soft-browse">6 · Soft Browse</a>
     <a href="#face-out">5 · Face Out</a>
@@ -31,10 +32,68 @@
     <a href="#late-fee">4 · Late Fee</a>
   </nav>
 
-  <!-- 7. HEAD TO HEAD -->
-  <article id="head-to-head" class="concept concept-featured">
+  <!-- 8. HANDFUL — group of 5 drag reorder -->
+  <article id="handful" class="concept concept-featured">
     <div class="concept-meta">
-      <span class="concept-num">07 · lead</span>
+      <span class="concept-num">08 · lead</span>
+      <h2>Handful</h2>
+      <p class="mood">Five books · drag to order · one submit</p>
+      <p>
+        Rank a group of five in one turn: drag titles into best → worst order,
+        then lock it in. Each screen captures a full relative ranking
+        (~log₂(5!) bits) instead of a single pairwise pick.
+      </p>
+      <ul class="traits">
+        <li>Interactive: drag any row to reorder the stack</li>
+        <li>Rank badges update live as books move</li>
+        <li>Submit locks the handful and deals the next five</li>
+        <li>Best at the top — relative order only, no scores on this screen</li>
+        <li>Try it in the phone frame — this one is wired</li>
+      </ul>
+    </div>
+    <div class="stage" aria-label="Handful phone preview">
+      <div class="phone phone-handful">
+        <div class="phone-shell phone-shell-handful">
+          <div class="phone-statusbar phone-statusbar-handful">
+            <span>9:41</span>
+            <span class="phone-notch" aria-hidden="true"></span>
+            <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
+          </div>
+          <div class="app-screen handful-screen" id="handful-screen">
+            <div class="handful-grain" aria-hidden="true"></div>
+            <header class="chrome-bar handful-chrome">
+              <button type="button" class="menu-btn menu-btn-light" aria-label="Open menu">
+                <span></span><span></span><span></span>
+              </button>
+              <p class="chrome-brand handful-brand">Shelf Showdown</p>
+              <span class="chrome-count handful-count" id="handful-round">1/8</span>
+            </header>
+
+            <div class="handful-prompt">
+              <p class="handful-prompt-title">Best on top</p>
+              <p class="handful-prompt-sub">Drag to rearrange, then submit this handful.</p>
+            </div>
+
+            <ol class="handful-list" id="handful-list" aria-label="Drag to rank these five books"></ol>
+
+            <div class="handful-footer">
+              <button type="button" class="handful-submit" id="handful-submit">
+                <span class="handful-submit-label">Submit order</span>
+                <span class="handful-submit-hint" aria-hidden="true">Lock · next five</span>
+              </button>
+              <p class="handful-status" id="handful-status" aria-live="polite"></p>
+            </div>
+          </div>
+          <div class="phone-home phone-home-handful" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- 7. HEAD TO HEAD -->
+  <article id="head-to-head" class="concept">
+    <div class="concept-meta">
+      <span class="concept-num">07</span>
       <h2>Head to Head</h2>
       <p class="mood">Teal vs coral · vote arena · progress bar</p>
       <p>
@@ -627,6 +686,7 @@
         <thead>
           <tr>
             <th></th>
+            <th>Handful</th>
             <th>Head to Head</th>
             <th>Soft Browse</th>
             <th>Face Out</th>
@@ -639,6 +699,7 @@
         <tbody>
           <tr>
             <th scope="row">Focus</th>
+            <td>Rank five</td>
             <td>Vote arena</td>
             <td>Layered glass</td>
             <td>Covers</td>
@@ -649,6 +710,7 @@
           </tr>
           <tr>
             <th scope="row">Prompt / chips</th>
+            <td>Best on top</td>
             <td>Round + votes</td>
             <td>None</td>
             <td>None</td>
@@ -659,6 +721,7 @@
           </tr>
           <tr>
             <th scope="row">Secondary nav</th>
+            <td>Hamburger</td>
             <td>Bottom tabs</td>
             <td>Hamburger</td>
             <td>Hamburger</td>
@@ -669,6 +732,7 @@
           </tr>
           <tr>
             <th scope="row">Tab bar</th>
+            <td>Removed</td>
             <td>Full</td>
             <td>Removed</td>
             <td>Removed</td>
@@ -678,7 +742,8 @@
             <td>Removed</td>
           </tr>
           <tr>
-            <th scope="row">Skip / Undo</th>
+            <th scope="row">Interaction</th>
+            <td>Drag + submit</td>
             <td>Swipe to vote</td>
             <td>Swipe</td>
             <td>Swipe</td>
@@ -694,10 +759,11 @@
 
   <footer class="outro">
     <p>
-      Rule of thumb: if it isn’t the matchup, it waits in the menu.
+      Rule of thumb: if it isn’t the matchup (or the handful), it waits in the menu.
       Open locally: <code>styles/index.html</code>
     </p>
   </footer>
   <script src="swipe.js" defer></script>
+  <script src="group-five.js" defer></script>
 </body>
 </html>
