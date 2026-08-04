@@ -2150,6 +2150,360 @@ tbody th {
   }
 }
 
+/* ========== 8. Handful — group of 5 drag reorder ========== */
+.phone-shell-handful {
+  background: linear-gradient(165deg, #1a3330 0%, #0c1614 55%, #142422 100%);
+}
+
+.phone-statusbar-handful {
+  color: #d7ebe4;
+}
+
+.phone-home-handful {
+  background: #d7ebe4;
+}
+
+.handful-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0 0.85rem 0.85rem;
+  background:
+    radial-gradient(ellipse 80% 45% at 50% -10%, rgba(90, 180, 150, 0.22), transparent 55%),
+    linear-gradient(180deg, #12352f 0%, #0a1c19 48%, #071412 100%);
+  color: #e8f4ef;
+  overflow: hidden;
+}
+
+.handful-grain {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  opacity: 0.07;
+  background-image:
+    repeating-linear-gradient(
+      -12deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.35) 2px,
+      rgba(255, 255, 255, 0.35) 3px
+    );
+}
+
+.handful-chrome {
+  position: relative;
+  z-index: 1;
+  color: #e8f4ef;
+}
+
+.handful-brand {
+  font-family: "Syne", "Outfit", var(--font-ui);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-size: 0.95rem;
+}
+
+.handful-count {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #8fbfb0;
+}
+
+.handful-prompt {
+  position: relative;
+  z-index: 1;
+  padding: 0.15rem 0.15rem 0.35rem;
+  animation: handful-prompt-in 0.5s ease both;
+}
+
+.handful-prompt-title {
+  margin: 0;
+  font-family: "Syne", "Outfit", var(--font-ui);
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #f3fbf7;
+}
+
+.handful-prompt-sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.82rem;
+  color: #8fbfb0;
+}
+
+.handful-list {
+  position: relative;
+  z-index: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-height: 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.handful-list.is-reordering .handful-item:not(.is-dragging) {
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.handful-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.35rem;
+  border-radius: 0.7rem;
+  background: rgba(18, 48, 42, 0.72);
+  border: 1px solid rgba(143, 191, 176, 0.18);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  cursor: grab;
+  animation: handful-row-in 0.42s ease both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+.handful-item.is-first {
+  border-color: rgba(214, 176, 74, 0.55);
+  background: linear-gradient(110deg, rgba(214, 176, 74, 0.16), rgba(18, 48, 42, 0.8) 55%);
+}
+
+.handful-item.is-dragging {
+  position: absolute;
+  margin: 0;
+  cursor: grabbing;
+  z-index: 6;
+  opacity: 0.96;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(214, 176, 74, 0.45);
+  transform: scale(1.02);
+  animation: none;
+  pointer-events: none;
+}
+
+.handful-placeholder {
+  list-style: none;
+  border-radius: 0.7rem;
+  border: 1.5px dashed rgba(214, 176, 74, 0.45);
+  background: rgba(214, 176, 74, 0.08);
+  flex-shrink: 0;
+}
+
+.handful-handle {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem 0.35rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: grab;
+  touch-action: none;
+}
+
+.handful-rank {
+  display: grid;
+  place-items: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 0.4rem;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: rgba(8, 24, 20, 0.75);
+  color: #d7ebe4;
+  transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.handful-item.is-first .handful-rank {
+  background: #d6b04a;
+  color: #1a1608;
+}
+
+.handful-rank.is-ticking {
+  transform: scale(1.12);
+}
+
+.handful-grip {
+  display: grid;
+  gap: 2px;
+  width: 0.85rem;
+}
+
+.handful-grip span {
+  display: block;
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(143, 191, 176, 0.55);
+}
+
+.handful-cover {
+  width: 2.55rem;
+  aspect-ratio: var(--cover-ratio);
+  border-radius: 0.28rem;
+  overflow: hidden;
+  background: #0a1c19;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.handful-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+.handful-meta {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+  padding-right: 0.2rem;
+}
+
+.handful-title {
+  font-family: "Outfit", var(--font-ui);
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: #f3fbf7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.handful-author {
+  font-size: 0.72rem;
+  color: #8fbfb0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.handful-footer {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.4rem;
+  padding-top: 0.25rem;
+}
+
+.handful-submit {
+  display: grid;
+  gap: 0.1rem;
+  justify-items: center;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-radius: 0.85rem;
+  cursor: pointer;
+  font-family: "Syne", "Outfit", var(--font-ui);
+  background: linear-gradient(180deg, #e4c15a 0%, #d6b04a 100%);
+  color: #1a1608;
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.18) inset;
+  transition: transform 0.15s ease, filter 0.15s ease, opacity 0.2s ease;
+}
+
+.handful-submit:hover:not(:disabled) {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+}
+
+.handful-submit:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.handful-submit:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.handful-submit-label {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.handful-submit-hint {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.handful-status {
+  min-height: 1.1rem;
+  margin: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #8fbfb0;
+}
+
+.handful-screen.is-submitted .handful-item {
+  pointer-events: none;
+}
+
+.handful-screen.is-submitted .handful-item.is-first {
+  animation: handful-lock-pulse 0.55s ease;
+}
+
+.handful-screen.is-dealing .handful-list {
+  animation: handful-deal-out 0.28s ease both;
+}
+
+@keyframes handful-prompt-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes handful-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes handful-lock-pulse {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes handful-deal-out {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
 @media (max-width: 420px) {
   :root {
     --phone-h: min(46rem, 92vh);
