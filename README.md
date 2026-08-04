@@ -1,12 +1,12 @@
 # Shelf Showdown
 
-Rank your books with binary insertion: each title is placed into your shelf with about log₂(n) picks instead of endless pairwise Elo grind.
+Rank your books in handfuls of five: drag to set best → worst, submit, and merge runs into a full shelf order — far fewer screens than pairwise picks.
 
 ## MVP features
 
 - **Accounts** — email/password sign-up and sign-in (Convex Auth)
 - **Library** — add books manually, import a CSV, or load from a public Google Sheets URL
-- **Sort** — binary-search each book into your ranking; skip or undo anytime
+- **Sort** — rank up to five books at a time (drag + submit), then merge into one shelf
 - **Rankings** — live ordered shelf from completed placements
 - **Rereads** — books finished more than once, sorted by times read
 
@@ -20,7 +20,7 @@ The static frontend (`index.html`, `app.js`, `style.css`, `modules/`) is served 
 
 ## Design ideas
 
-Playful visual directions (not wired into the app yet) live in [`styles/index.html`](styles/index.html) — mobile-app phone frames including Head to Head (teal/coral vote arena), Soft Browse (layered glass cover cards), Face Out, Ring Round, Stack Attack, Zine Fight, and Late Fee.
+Playful visual directions (not wired into the app yet) live in [`styles/index.html`](styles/index.html) — including the Handful drag-to-rank phone mock, Head to Head, Soft Browse, and more.
 
 ## Run it locally
 
