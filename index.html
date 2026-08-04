@@ -15,7 +15,7 @@
       <div class="header-row">
         <div>
           <h1 class="brand">Shelf Showdown</h1>
-          <p class="tagline">Place each book on your shelf with a few quick picks.</p>
+          <p class="tagline">Rank a handful of books at a time — drag to order, then submit.</p>
         </div>
         <div id="account-bar" class="account-bar" hidden>
           <span id="account-email" class="account-email"></span>
@@ -56,7 +56,7 @@
       <!-- Compare (default when library is ready) -->
       <section id="view-compare" class="view active" role="tabpanel">
         <h2 class="view-title">Sort Your Shelf</h2>
-        <p class="view-lede">Each new book is binary-searched into your ranking — about 9 picks per title in a 400-book library, not thousands.</p>
+        <p class="view-lede">Drag up to five books into best → worst order, then submit. Group, then merge — far fewer screens than pairwise picks.</p>
 
         <div id="compare-empty" class="empty-state" hidden>
           <p>Add at least two books to start sorting.</p>
@@ -72,12 +72,13 @@
         </div>
 
         <div id="compare-active">
-          <div class="matchup" id="matchup">
-            <button type="button" class="book-choice" id="choice-a" aria-label="Prefer book A"></button>
-            <p class="vs" aria-hidden="true">vs</p>
-            <button type="button" class="book-choice" id="choice-b" aria-label="Prefer book B"></button>
-          </div>
-          <div class="compare-actions">
+          <p class="handful-prompt" id="handful-prompt">
+            <span class="handful-prompt-title">Best on top</span>
+            <span class="handful-prompt-sub" id="handful-prompt-sub">Drag to rearrange, then submit this handful.</span>
+          </p>
+          <ol class="handful-list" id="handful-list" aria-label="Drag to rank these books"></ol>
+          <div class="compare-actions handful-actions">
+            <button type="button" id="handful-submit" class="btn btn-raised">Submit order</button>
             <button type="button" id="skip-btn" class="btn btn-flat">Skip book</button>
             <button type="button" id="undo-btn" class="btn btn-flat">Undo</button>
           </div>
@@ -88,7 +89,7 @@
       <!-- Rankings -->
       <section id="view-rankings" class="view" role="tabpanel" hidden>
         <h2 class="view-title">Top Shelf</h2>
-        <p class="view-lede">Your personal order from binary-insertion sorting.</p>
+        <p class="view-lede">Your personal order from handful sorting.</p>
         <ol id="rankings-list" class="rankings-list"></ol>
         <p id="rankings-empty" class="empty-state" hidden>No books yet. Import or add some to see rankings.</p>
       </section>

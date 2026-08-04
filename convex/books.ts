@@ -199,7 +199,7 @@ export const clearAll = mutation({
   },
 });
 
-/** Assign position-based ratings after binary-insertion placement. */
+/** Assign position-based ratings after handful placement / merge. */
 export const setRatings = mutation({
   args: {
     updates: v.array(
