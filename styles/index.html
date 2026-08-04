@@ -6,7 +6,7 @@
   <title>Shelf Showdown — Mobile Style Ideas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&family=Lilita+One&family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Mono:wght@500;700&family=Lilita+One&family=Nunito:wght@600;700;800&family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Space+Grotesk:wght@500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -15,12 +15,14 @@
     <h1>Shelf Showdown in your hand</h1>
     <p class="intro-lede">
       You’re here to pick books. Rankings, stats, and library live behind a menu —
-      the screen stays on the matchup. Every concept below follows that rule.
+      the screen stays on the matchup. Every concept below follows that rule —
+      except Head to Head, which explores a fuller vote-arena chrome from a product mock.
     </p>
     <p class="intro-note">Phone frames only. Nothing here is wired to the live app yet.</p>
   </header>
 
   <nav class="concept-nav" aria-label="Concepts">
+    <a href="#head-to-head">7 · Head to Head</a>
     <a href="#soft-browse">6 · Soft Browse</a>
     <a href="#face-out">5 · Face Out</a>
     <a href="#ring-round">1 · Ring Round</a>
@@ -29,8 +31,183 @@
     <a href="#late-fee">4 · Late Fee</a>
   </nav>
 
+  <!-- 7. HEAD TO HEAD -->
+  <article id="head-to-head" class="concept concept-featured">
+    <div class="concept-meta">
+      <span class="concept-num">07 · lead</span>
+      <h2>Head to Head</h2>
+      <p class="mood">Teal vs coral · vote arena · progress bar</p>
+      <p>
+        Side-by-side jackets under Book A / Book B tabs, bold vote buttons, and a
+        live progress track. A friendlier “arena” chrome with bottom tabs —
+        closer to a full mobile product shell than the minimal matchups below.
+      </p>
+      <ul class="traits">
+        <li>Pale field with faint book-pattern atmosphere</li>
+        <li>Logo lockup with open-book mark between Shelf and Showdown</li>
+        <li>Teal A / coral B cards, covers, ratings, and short blurbs</li>
+        <li>Vote CTAs with share %, crown on the current lead</li>
+        <li>Bottom tabs: Home · Search · Showdown · Leaderboard · Profile</li>
+        <li>Swipe hint under the prompt (right → A, left → B)</li>
+      </ul>
+    </div>
+    <div class="stage" aria-label="Head to Head phone preview">
+      <div class="phone phone-h2h">
+        <div class="phone-shell phone-shell-h2h">
+          <div class="phone-statusbar phone-statusbar-h2h">
+            <span>9:41</span>
+            <span class="phone-notch" aria-hidden="true"></span>
+            <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
+          </div>
+          <div class="app-screen h2h-screen" data-swipe-screen>
+            <div class="h2h-pattern" aria-hidden="true"></div>
+            <header class="h2h-header">
+              <p class="h2h-logo">
+                <span>Shelf</span>
+                <svg class="h2h-logo-mark" viewBox="0 0 40 28" aria-hidden="true" focusable="false">
+                  <path class="h2h-logo-spine" d="M20 4v20" />
+                  <path class="h2h-logo-page-l" d="M20 5C12 5 6 8 4 12c2 5 8 9 16 9" />
+                  <path class="h2h-logo-page-r" d="M20 5c8 0 14 3 16 7-2 5-8 9-16 9" />
+                </svg>
+                <span>Showdown</span>
+              </p>
+              <p class="h2h-round">Round 1 · Head to Head</p>
+              <div class="h2h-progress" aria-label="Progress 4 of 10">
+                <div class="h2h-progress-track">
+                  <div class="h2h-progress-fill" style="width: 40%"></div>
+                </div>
+                <span class="h2h-progress-count">4/10</span>
+              </div>
+            </header>
+
+            <div class="h2h-matchup">
+              <article class="h2h-card h2h-card-a">
+                <span class="h2h-tab h2h-tab-a">Book A</span>
+                <div class="h2h-cover">
+                  <img
+                    draggable="false"
+                    src="https://covers.openlibrary.org/b/isbn/0441478123-L.jpg"
+                    alt=""
+                    width="200"
+                    height="300"
+                    loading="lazy"
+                  />
+                </div>
+                <ul class="h2h-meta">
+                  <li>
+                    <span class="h2h-meta-label">Rating</span>
+                    <span class="h2h-meta-value">
+                      4.5
+                      <span class="h2h-stars" aria-hidden="true">★★★★★</span>
+                    </span>
+                  </li>
+                  <li>
+                    <span class="h2h-meta-label">Pages</span>
+                    <span class="h2h-meta-value">304</span>
+                  </li>
+                  <li>
+                    <span class="h2h-meta-label">Genre</span>
+                    <span class="h2h-meta-value">Fiction / Fantasy</span>
+                  </li>
+                </ul>
+                <p class="h2h-blurb">A lone envoy on a winter world where gender is fluid and loyalty is everything.</p>
+              </article>
+
+              <div class="h2h-vs" aria-hidden="true">
+                <span class="h2h-vs-burst h2h-vs-burst-1"></span>
+                <span class="h2h-vs-burst h2h-vs-burst-2"></span>
+                <span class="h2h-vs-burst h2h-vs-burst-3"></span>
+                <span class="h2h-vs-label">vs</span>
+              </div>
+
+              <article class="h2h-card h2h-card-b">
+                <span class="h2h-tab h2h-tab-b">Book B</span>
+                <div class="h2h-cover">
+                  <img
+                    draggable="false"
+                    src="https://covers.openlibrary.org/b/isbn/9780441569595-L.jpg"
+                    alt=""
+                    width="200"
+                    height="300"
+                    loading="lazy"
+                  />
+                </div>
+                <ul class="h2h-meta">
+                  <li>
+                    <span class="h2h-meta-label">Rating</span>
+                    <span class="h2h-meta-value">
+                      4.2
+                      <span class="h2h-stars" aria-hidden="true">★★★★☆</span>
+                    </span>
+                  </li>
+                  <li>
+                    <span class="h2h-meta-label">Pages</span>
+                    <span class="h2h-meta-value">271</span>
+                  </li>
+                  <li>
+                    <span class="h2h-meta-label">Genre</span>
+                    <span class="h2h-meta-value">Sci-Fi</span>
+                  </li>
+                </ul>
+                <p class="h2h-blurb">Console cowboy Case jacks into cyberspace and steals data he was never meant to see.</p>
+              </article>
+            </div>
+
+            <div class="h2h-votes">
+              <div class="h2h-vote-wrap">
+                <span class="h2h-crown" aria-hidden="true"></span>
+                <button type="button" class="h2h-vote h2h-vote-a" aria-label="Vote for Book A">
+                  <span class="h2h-vote-label">Vote for A</span>
+                  <span class="h2h-vote-share">★ 48% votes</span>
+                </button>
+              </div>
+              <div class="h2h-vote-wrap is-leading">
+                <span class="h2h-crown" aria-hidden="true">♛</span>
+                <button type="button" class="h2h-vote h2h-vote-b" aria-label="Vote for Book B">
+                  <span class="h2h-vote-label">Vote for B</span>
+                  <span class="h2h-vote-share">★ 52% votes</span>
+                </button>
+              </div>
+            </div>
+
+            <p class="h2h-prompt">
+              <span class="h2h-prompt-title">Which one wins this round?</span>
+              <span class="h2h-prompt-sub">Swipe right for Book A, swipe left for Book B.</span>
+            </p>
+
+            <nav class="h2h-tabs" aria-label="App sections">
+              <button type="button" class="h2h-tab-item">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z"/></svg>
+                <span>Home</span>
+              </button>
+              <button type="button" class="h2h-tab-item">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+                <span>Search</span>
+              </button>
+              <button type="button" class="h2h-tab-item is-active" aria-current="page">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h5v16H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm7 0h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5V4Z"/></svg>
+                <span>Showdown</span>
+              </button>
+              <button type="button" class="h2h-tab-item">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20V9l5-5 5 5v11"/><path d="M9.5 20v-6h5v6"/></svg>
+                <span>Board</span>
+              </button>
+              <button type="button" class="h2h-tab-item">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5c1.6-3.2 4-4.8 6.5-4.8s4.9 1.6 6.5 4.8"/></svg>
+                <span>Profile</span>
+              </button>
+            </nav>
+
+            <div class="swipe-toast" aria-live="polite" hidden></div>
+          </div>
+          <div class="phone-home phone-home-h2h" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
   <!-- 6. SOFT BROWSE -->
-  <article id="soft-browse" class="concept concept-featured">
+  <article id="soft-browse" class="concept">
     <div class="concept-meta">
       <span class="concept-num">06</span>
       <h2>Soft Browse</h2>
@@ -449,6 +626,7 @@
         <thead>
           <tr>
             <th></th>
+            <th>Head to Head</th>
             <th>Soft Browse</th>
             <th>Face Out</th>
             <th>Ring Round</th>
@@ -460,6 +638,7 @@
         <tbody>
           <tr>
             <th scope="row">Focus</th>
+            <td>Vote arena</td>
             <td>Layered glass</td>
             <td>Covers</td>
             <td>Posters</td>
@@ -469,6 +648,7 @@
           </tr>
           <tr>
             <th scope="row">Prompt / chips</th>
+            <td>Round + votes</td>
             <td>None</td>
             <td>None</td>
             <td>None</td>
@@ -478,6 +658,7 @@
           </tr>
           <tr>
             <th scope="row">Secondary nav</th>
+            <td>Bottom tabs</td>
             <td>Hamburger</td>
             <td>Hamburger</td>
             <td>Hamburger</td>
@@ -487,6 +668,7 @@
           </tr>
           <tr>
             <th scope="row">Tab bar</th>
+            <td>Full</td>
             <td>Removed</td>
             <td>Removed</td>
             <td>Removed</td>
@@ -496,6 +678,7 @@
           </tr>
           <tr>
             <th scope="row">Skip / Undo</th>
+            <td>Swipe to vote</td>
             <td>Swipe</td>
             <td>Swipe</td>
             <td>Quiet</td>
