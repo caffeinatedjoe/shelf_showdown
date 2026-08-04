@@ -4,10 +4,12 @@
 
   /**
    * Swipe left → undo, swipe right → skip.
+   * Head to Head maps swipes to Book B / Book A votes instead.
    * Demo feedback only — styles page is not wired to the live app.
    */
   function bindSwipeScreen(screen) {
     const toast = screen.querySelector(".swipe-toast");
+    const isHeadToHead = screen.classList.contains("h2h-screen");
     let startX = 0;
     let startY = 0;
     let tracking = false;
@@ -20,13 +22,18 @@
       screen.classList.remove("is-swiping-left", "is-swiping-right");
     }
 
-    function showToast(action) {
+    function showToast(direction) {
       if (!toast) return;
       window.clearTimeout(toastTimer);
+      const isLeft = direction === "left";
       toast.hidden = false;
-      toast.textContent = action === "undo" ? "Undo" : "Skip";
-      toast.classList.toggle("is-undo", action === "undo");
-      toast.classList.toggle("is-skip", action === "skip");
+      if (isHeadToHead) {
+        toast.textContent = isLeft ? "Book B" : "Book A";
+      } else {
+        toast.textContent = isLeft ? "Undo" : "Skip";
+      }
+      toast.classList.toggle("is-undo", isLeft);
+      toast.classList.toggle("is-skip", !isLeft);
       void toast.offsetWidth;
       toast.classList.add("is-visible");
       toastTimer = window.setTimeout(() => {
@@ -62,8 +69,7 @@
         return;
       }
 
-      // Left swipe → undo; right swipe → skip
-      showToast(dx < 0 ? "undo" : "skip");
+      showToast(dx < 0 ? "left" : "right");
     }
 
     function onPointerMove(event) {
@@ -91,7 +97,7 @@
 
     function onPointerDown(event) {
       if (event.button != null && event.button !== 0) return;
-      if (event.target.closest(".menu-btn")) return;
+      if (event.target.closest(".menu-btn, .h2h-vote, .h2h-tab-item")) return;
       tracking = true;
       pointerId = event.pointerId;
       startX = lastX = event.clientX;

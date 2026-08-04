@@ -20,7 +20,7 @@ The static frontend (`index.html`, `app.js`, `style.css`, `modules/`) is served 
 
 ## Design ideas
 
-Playful visual directions (not wired into the app yet) live in [`styles/index.html`](styles/index.html) — mobile-app phone frames including Soft Browse (layered glass cover cards), Face Out, Ring Round, Stack Attack, Zine Fight, and Late Fee.
+Playful visual directions (not wired into the app yet) live in [`styles/index.html`](styles/index.html) — mobile-app phone frames including Head to Head (teal/coral vote arena), Soft Browse (layered glass cover cards), Face Out, Ring Round, Stack Attack, Zine Fight, and Late Fee.
 
 ## Run it locally
 
