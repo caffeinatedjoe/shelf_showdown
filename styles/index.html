@@ -34,17 +34,18 @@
     <div class="concept-meta">
       <span class="concept-num">06</span>
       <h2>Soft Browse</h2>
-      <p class="mood">Pastel travel-app · rounded covers · menu tucked away</p>
+      <p class="mood">Layered glass · overlapping type · depth through opacity</p>
       <p>
-        Two big jackets. Tiny chrome. Rankings and library sit in the hamburger —
-        no tab bar, no chip row, no tutorial prompt.
+        Two jackets float in frosted panels — stacked with soft overlap, ghost
+        numerals, and blur so the matchup feels dimensional. Tiny chrome;
+        rankings and library stay in the hamburger.
       </p>
       <ul class="traits">
-        <li>Matchup fills ~80% of the screen</li>
-        <li>Covers stacked vertically at a natural 2∶3 jacket ratio</li>
+        <li>Navy gradient field with soft color washes behind the cards</li>
+        <li>Glass cards overlap slightly; large faded numerals sit behind titles</li>
+        <li>Covers keep a natural 2∶3 jacket ratio inside translucent panels</li>
         <li>Hamburger menu: Rankings · Stats · Library · Sign out</li>
         <li>Swipe left to undo, swipe right to skip — no buttons</li>
-        <li>Progress as a small counter only</li>
       </ul>
       <details class="menu-demo">
         <summary>What’s in the menu</summary>
@@ -59,50 +60,68 @@
     <div class="stage" aria-label="Soft Browse phone preview">
       <div class="phone phone-soft">
         <div class="phone-shell phone-shell-soft">
-          <div class="phone-statusbar">
+          <div class="phone-statusbar phone-statusbar-light">
             <span>9:41</span>
             <span class="phone-notch" aria-hidden="true"></span>
             <span class="phone-status-right" aria-hidden="true">▮▮▮</span>
           </div>
           <div class="app-screen soft-screen" data-swipe-screen>
-            <header class="chrome-bar">
+            <div class="soft-atmosphere" aria-hidden="true">
+              <span class="soft-orb soft-orb-a"></span>
+              <span class="soft-orb soft-orb-b"></span>
+              <span class="soft-orb soft-orb-c"></span>
+            </div>
+            <header class="chrome-bar soft-chrome">
               <button type="button" class="menu-btn soft-menu-btn" aria-label="Open menu">
                 <span></span><span></span><span></span>
               </button>
               <p class="chrome-brand soft-chrome-brand">Shelf Showdown</p>
-              <span class="chrome-count soft-count">3/9</span>
+              <span class="chrome-count soft-count">03<span>/09</span></span>
             </header>
             <div class="soft-matchup soft-matchup-focus">
-              <button type="button" class="soft-card" aria-label="Prefer The Left Hand of Darkness">
-                <img
-                  draggable="false"
-                  src="https://covers.openlibrary.org/b/isbn/0441478123-L.jpg"
-                  alt=""
-                  width="200"
-                  height="300"
-                  loading="lazy"
-                />
-                <span class="soft-card-fade" aria-hidden="true"></span>
-                <span class="soft-card-meta">
-                  <span class="soft-card-title">The Left Hand of Darkness</span>
-                  <span class="soft-card-author">Ursula K. Le Guin</span>
-                </span>
-              </button>
-              <button type="button" class="soft-card" aria-label="Prefer Neuromancer">
-                <img
-                  draggable="false"
-                  src="https://covers.openlibrary.org/b/isbn/9780441569595-L.jpg"
-                  alt=""
-                  width="200"
-                  height="300"
-                  loading="lazy"
-                />
-                <span class="soft-card-fade" aria-hidden="true"></span>
-                <span class="soft-card-meta">
-                  <span class="soft-card-title">Neuromancer</span>
-                  <span class="soft-card-author">William Gibson</span>
-                </span>
-              </button>
+              <p class="soft-prompt">
+                <span class="soft-prompt-title">Pick a shelf</span>
+                <span class="soft-prompt-sub">Which jacket wins this round?</span>
+              </p>
+              <div class="soft-stack">
+                <button type="button" class="soft-card soft-card-a" aria-label="Prefer The Left Hand of Darkness">
+                  <span class="soft-card-num" aria-hidden="true">01</span>
+                  <span class="soft-card-media">
+                    <img
+                      draggable="false"
+                      src="https://covers.openlibrary.org/b/isbn/0441478123-L.jpg"
+                      alt=""
+                      width="200"
+                      height="300"
+                      loading="lazy"
+                    />
+                  </span>
+                  <span class="soft-card-meta">
+                    <span class="soft-card-kicker">Option A</span>
+                    <span class="soft-card-title">The Left Hand of Darkness</span>
+                    <span class="soft-card-author">Ursula K. Le Guin</span>
+                  </span>
+                </button>
+                <button type="button" class="soft-card soft-card-b" aria-label="Prefer Neuromancer">
+                  <span class="soft-card-num" aria-hidden="true">02</span>
+                  <span class="soft-card-media">
+                    <img
+                      draggable="false"
+                      src="https://covers.openlibrary.org/b/isbn/9780441569595-L.jpg"
+                      alt=""
+                      width="200"
+                      height="300"
+                      loading="lazy"
+                    />
+                  </span>
+                  <span class="soft-card-meta">
+                    <span class="soft-card-kicker">Option B</span>
+                    <span class="soft-card-title">Neuromancer</span>
+                    <span class="soft-card-author">William Gibson</span>
+                  </span>
+                </button>
+                <span class="soft-vs" aria-hidden="true">or</span>
+              </div>
             </div>
             <div class="swipe-edge-hint" aria-hidden="true">
               <span class="swipe-edge-hint-left">Undo</span>
@@ -110,7 +129,7 @@
             </div>
             <div class="swipe-toast" aria-live="polite" hidden></div>
           </div>
-          <div class="phone-home" aria-hidden="true"></div>
+          <div class="phone-home phone-home-light" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -441,7 +460,7 @@
         <tbody>
           <tr>
             <th scope="row">Focus</th>
-            <td>Covers</td>
+            <td>Layered glass</td>
             <td>Covers</td>
             <td>Posters</td>
             <td>Tokens</td>

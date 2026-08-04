@@ -131,7 +131,7 @@ body {
 }
 
 .concept-featured .concept-num {
-  color: #5b3cc4;
+  color: #5b8bff;
 }
 
 .concept-meta {
@@ -360,79 +360,238 @@ body {
   padding-left: 1.1rem;
 }
 
-/* ========== SOFT BROWSE ========== */
+/* ========== SOFT BROWSE ==========
+   Layered glass UI — depth via overlap, opacity, blur, gradients
+   (inspired by Mockplus #19 / dribbble 5294472) */
 .phone-shell-soft {
-  background: linear-gradient(160deg, #3a2a55 0%, #1a1428 55%, #241833 100%);
+  background: linear-gradient(160deg, #2a3558 0%, #151a2e 55%, #1c2440 100%);
 }
 
 .soft-screen {
-  background:
-    radial-gradient(ellipse 80% 50% at 10% 0%, rgba(168, 230, 207, 0.55), transparent 50%),
-    radial-gradient(ellipse 70% 45% at 100% 10%, rgba(198, 176, 245, 0.55), transparent 48%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(255, 190, 210, 0.4), transparent 50%),
-    linear-gradient(180deg, #f7f4ff 0%, #eef7f4 45%, #f8eef5 100%);
-  color: #2a2140;
+  --soft-ink: #f4f7ff;
+  --soft-muted: #9dabc8;
+  --soft-accent: #ff6b8a;
+  --soft-glow: #5b8bff;
+  --soft-glass: rgba(61, 79, 125, 0.42);
+  background: linear-gradient(180deg, #6b7ba8 0%, #4a5a86 42%, #2a3558 100%);
+  color: var(--soft-ink);
   padding: 0.15rem 0 0;
   font-family: "Plus Jakarta Sans", var(--font-ui);
+  isolation: isolate;
+}
+
+.soft-atmosphere {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.soft-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(28px);
+  opacity: 0.55;
+  animation: soft-drift 8s ease-in-out infinite alternate;
+}
+
+.soft-orb-a {
+  width: 11rem;
+  height: 11rem;
+  top: -2rem;
+  left: -3rem;
+  background: radial-gradient(circle, rgba(91, 139, 255, 0.75), transparent 68%);
+}
+
+.soft-orb-b {
+  width: 9rem;
+  height: 9rem;
+  top: 38%;
+  right: -3.5rem;
+  background: radial-gradient(circle, rgba(160, 120, 255, 0.55), transparent 70%);
+  animation-delay: -2.5s;
+}
+
+.soft-orb-c {
+  width: 12rem;
+  height: 8rem;
+  bottom: -1.5rem;
+  left: 20%;
+  background: radial-gradient(circle, rgba(255, 107, 138, 0.35), transparent 72%);
+  animation-delay: -4.5s;
+}
+
+.soft-chrome {
+  position: relative;
+  z-index: 2;
 }
 
 .soft-menu-btn {
-  background: rgba(91, 60, 196, 0.1);
-  color: #5b3cc4;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--soft-ink);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .soft-chrome-brand {
-  font-family: "Fraunces", Georgia, serif;
+  font-family: "Plus Jakarta Sans", var(--font-ui);
   font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: -0.02em;
+  font-size: 1rem;
+  letter-spacing: -0.03em;
+  color: var(--soft-ink);
+  text-shadow: 0 1px 12px rgba(20, 28, 56, 0.35);
 }
 
 .soft-count {
-  color: #5b3cc4;
+  color: var(--soft-ink);
   font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.soft-count span {
+  color: var(--soft-muted);
+  font-weight: 600;
 }
 
 .soft-matchup,
 .soft-matchup-focus {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-  padding: 0.25rem 1.1rem 0.85rem;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  padding: 0.15rem 1rem 1rem;
   flex: 1;
   min-height: 0;
   container-type: size;
   touch-action: pan-y;
 }
 
+.soft-prompt {
+  margin: 0 0.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  animation: soft-rise 0.5s cubic-bezier(0.2, 1.1, 0.3, 1) both;
+}
+
+.soft-prompt-title {
+  font-family: "Plus Jakarta Sans", var(--font-ui);
+  font-weight: 700;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--soft-ink);
+}
+
+.soft-prompt-sub {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--soft-muted);
+}
+
+.soft-stack {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: 0;
+  align-items: stretch;
+  padding: 0.15rem 0 0.35rem;
+}
+
 .soft-card {
   position: relative;
   appearance: none;
-  border: none;
-  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 0.7rem 0.75rem;
   margin: 0;
-  height: min(42cqh, 14.5rem);
-  width: auto;
-  max-width: 100%;
-  aspect-ratio: var(--cover-ratio);
+  width: 100%;
+  min-height: 0;
   border-radius: 1.35rem;
   overflow: hidden;
   cursor: pointer;
-  background: #c9bddf;
-  box-shadow: 0 12px 28px rgba(60, 40, 100, 0.16);
-  transform-origin: 50% 80%;
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
-  animation: soft-rise 0.55s cubic-bezier(0.2, 1.1, 0.3, 1) both;
-  flex-shrink: 1;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.75rem;
+  align-items: center;
+  text-align: left;
+  color: inherit;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.1), transparent 42%),
+    var(--soft-glass);
+  backdrop-filter: blur(22px) saturate(1.25);
+  -webkit-backdrop-filter: blur(22px) saturate(1.25);
+  box-shadow:
+    0 18px 40px rgba(18, 26, 52, 0.38),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  transform-origin: 50% 50%;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
 
-.soft-card:nth-child(2) {
+.soft-card-a {
+  z-index: 2;
+  margin-right: 0.85rem;
+  margin-bottom: -1.1rem;
+  animation: soft-rise-a 0.55s cubic-bezier(0.2, 1.1, 0.3, 1) both;
+}
+
+.soft-card-b {
+  z-index: 3;
+  margin-left: 0.85rem;
+  margin-top: -0.35rem;
+  animation: soft-rise-b 0.6s cubic-bezier(0.2, 1.1, 0.3, 1) both;
   animation-delay: 0.1s;
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.12), transparent 48%),
+    rgba(45, 60, 100, 0.52);
 }
 
-.soft-card img {
+.soft-card-num {
+  position: absolute;
+  right: 0.35rem;
+  top: 0.1rem;
+  font-family: "Plus Jakarta Sans", var(--font-ui);
+  font-weight: 800;
+  font-size: clamp(3.4rem, 28cqh, 5.2rem);
+  line-height: 0.85;
+  letter-spacing: -0.06em;
+  color: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+.soft-card-b .soft-card-num {
+  color: rgba(91, 139, 255, 0.16);
+  right: auto;
+  left: 0.2rem;
+  top: auto;
+  bottom: -0.35rem;
+}
+
+.soft-card-media {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: min(28cqh, 9.75rem);
+  width: auto;
+  aspect-ratio: var(--cover-ratio);
+  border-radius: 0.85rem;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(20, 28, 56, 0.45);
+  box-shadow:
+    0 10px 22px rgba(12, 18, 40, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.soft-card-media img {
   display: block;
   width: 100%;
   height: 100%;
@@ -443,61 +602,150 @@ body {
   user-select: none;
 }
 
-.soft-card-fade {
-  position: absolute;
-  inset: auto 0 0;
-  height: 55%;
-  background: linear-gradient(180deg, transparent 0%, rgba(28, 18, 48, 0.78) 75%);
-  pointer-events: none;
-}
-
 .soft-card-meta {
-  position: absolute;
-  left: 0.75rem;
-  right: 0.75rem;
-  bottom: 0.8rem;
+  position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  text-align: left;
-  color: #fff;
+  gap: 0.2rem;
+  min-width: 0;
+  padding-right: 0.35rem;
+}
+
+.soft-card-kicker {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--soft-accent);
+}
+
+.soft-card-b .soft-card-kicker {
+  color: #7eb0ff;
 }
 
 .soft-card-title {
   font-family: "Plus Jakarta Sans", var(--font-ui);
   font-weight: 800;
-  font-size: 0.88rem;
-  letter-spacing: -0.02em;
+  font-size: 0.95rem;
+  letter-spacing: -0.03em;
   line-height: 1.15;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+  color: var(--soft-ink);
 }
 
 .soft-card-author {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 500;
-  opacity: 0.9;
+  color: var(--soft-muted);
+  line-height: 1.25;
+}
+
+.soft-vs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 4;
+  transform: translate(-50%, -50%);
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: lowercase;
+  color: #fff;
+  background: var(--soft-accent);
+  box-shadow:
+    0 10px 24px rgba(255, 107, 138, 0.4),
+    0 0 0 4px rgba(255, 255, 255, 0.08);
+  animation: soft-pulse 2.8s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .soft-card:hover,
 .soft-card:focus-visible {
-  transform: translateY(-8px) scale(1.02);
-  box-shadow: 0 18px 34px rgba(60, 40, 100, 0.22);
   outline: none;
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 22px 48px rgba(18, 26, 52, 0.48),
+    0 0 0 1px rgba(255, 255, 255, 0.08) inset;
 }
 
-.soft-card:active {
-  transform: translateY(-2px) scale(0.98);
+.soft-card-a:hover,
+.soft-card-a:focus-visible {
+  transform: rotate(-1.4deg) translateY(-0.25rem) scale(1.02);
+}
+
+.soft-card-b:hover,
+.soft-card-b:focus-visible {
+  transform: rotate(1.8deg) translateY(-0.55rem) scale(1.02);
+}
+
+.soft-card-a:active {
+  transform: rotate(-1.4deg) translateY(0.2rem) scale(0.985);
+}
+
+.soft-card-b:active {
+  transform: rotate(1.8deg) translateY(-0.05rem) scale(0.985);
 }
 
 @keyframes soft-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes soft-rise-a {
+  from {
+    opacity: 0;
+    transform: rotate(-1.4deg) translateY(1.4rem);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-1.4deg) translateY(0.35rem);
+  }
+}
+
+@keyframes soft-rise-b {
+  from {
+    opacity: 0;
+    transform: rotate(1.8deg) translateY(1.2rem);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(1.8deg) translateY(-0.2rem);
+  }
+}
+
+@keyframes soft-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(0.6rem, 0.8rem, 0) scale(1.06);
+  }
+}
+
+@keyframes soft-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow:
+      0 10px 24px rgba(255, 107, 138, 0.4),
+      0 0 0 4px rgba(255, 255, 255, 0.08);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow:
+      0 12px 28px rgba(255, 107, 138, 0.5),
+      0 0 0 6px rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -662,8 +910,20 @@ body {
   opacity: 0.85;
 }
 
+.soft-screen .swipe-edge-hint-left {
+  color: #ff8aa3;
+}
+
 .soft-screen .swipe-edge-hint-right {
-  color: #6b5f8a;
+  color: #9dabc8;
+}
+
+.soft-screen .swipe-toast.is-undo {
+  background: rgba(255, 107, 138, 0.92);
+}
+
+.soft-screen .swipe-toast.is-skip {
+  background: rgba(42, 53, 88, 0.92);
 }
 
 .swipe-toast {
