@@ -437,13 +437,14 @@ body {
 
 .h2h-logo-mark {
   width: 1.55rem;
-  height: 1.1rem;
+  height: 1.15rem;
   overflow: visible;
+  flex-shrink: 0;
 }
 
 .h2h-logo-spine {
-  stroke: var(--h2h-ink);
-  stroke-width: 2.2;
+  stroke: #0d5f62;
+  stroke-width: 1.6;
   stroke-linecap: round;
   fill: none;
 }
@@ -451,13 +452,23 @@ body {
 .h2h-logo-page-l,
 .h2h-logo-page-r {
   fill: var(--h2h-teal);
-  opacity: 0.92;
+  stroke: #0d5f62;
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+  transform-origin: 16px 12px;
   animation: h2h-page-flutter 2.8s ease-in-out infinite;
 }
 
 .h2h-logo-page-r {
   animation-delay: -1.4s;
-  fill: color-mix(in srgb, var(--h2h-teal) 75%, #7ed4d6);
+  fill: #3ec4c0;
+}
+
+.h2h-logo-line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 0.9;
+  stroke-linecap: round;
 }
 
 .h2h-round {
@@ -936,10 +947,10 @@ body {
 @keyframes h2h-page-flutter {
   0%,
   100% {
-    transform: scaleX(1);
+    transform: scale(1);
   }
   50% {
-    transform: scaleX(1.06);
+    transform: scale(1.04);
   }
 }
 
