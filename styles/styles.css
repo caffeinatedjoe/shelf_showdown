@@ -369,7 +369,7 @@ body {
 
 .soft-screen {
   --soft-ink: #f4f7ff;
-  --soft-muted: #9dabc8;
+  --soft-muted: #b8c4dc;
   --soft-accent: #ff6b8a;
   --soft-glow: #5b8bff;
   --soft-glass: rgba(61, 79, 125, 0.42);
@@ -558,17 +558,17 @@ body {
   top: 0.1rem;
   font-family: "Plus Jakarta Sans", var(--font-ui);
   font-weight: 800;
-  font-size: clamp(3.4rem, 28cqh, 5.2rem);
+  font-size: clamp(3.6rem, 30cqh, 5.5rem);
   line-height: 0.85;
   letter-spacing: -0.06em;
-  color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.14);
   pointer-events: none;
   user-select: none;
   z-index: 0;
 }
 
 .soft-card-b .soft-card-num {
-  color: rgba(91, 139, 255, 0.16);
+  color: rgba(126, 176, 255, 0.22);
   right: auto;
   left: 0.2rem;
   top: auto;
@@ -579,7 +579,7 @@ body {
   position: relative;
   z-index: 1;
   display: block;
-  height: min(28cqh, 9.75rem);
+  height: min(30cqh, 10.5rem);
   width: auto;
   aspect-ratio: var(--cover-ratio);
   border-radius: 0.85rem;
