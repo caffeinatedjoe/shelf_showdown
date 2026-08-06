@@ -199,7 +199,7 @@ export const clearAll = mutation({
   },
 });
 
-/** Assign position-based ratings after handful placement / merge. */
+/** Assign Bradley-Terry / Elo ratings after a handful submit. */
 export const setRatings = mutation({
   args: {
     updates: v.array(
@@ -218,6 +218,26 @@ export const setRatings = mutation({
         throw new Error("Book not found");
       }
       await ctx.db.patch(update.bookId, { rating: update.rating });
+    }
+    return null;
+  },
+});
+
+/** Reset ratings and comparison counts for a fresh sort. */
+export const resetForSort = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const library = await requireLibraryForUser(ctx);
+    const books = await ctx.db
+      .query("books")
+      .withIndex("by_library", (q) => q.eq("libraryId", library._id))
+      .collect();
+    for (const book of books) {
+      await ctx.db.patch(book._id, {
+        rating: INITIAL_RATING,
+        comparisons: 0,
+      });
     }
     return null;
   },

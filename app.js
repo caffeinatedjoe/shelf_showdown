@@ -2,19 +2,20 @@ import {
   addBookRemote,
   clearLibraryRemote,
   importBooksRemote,
-  INITIAL_RATING,
   loadState,
+  recordHandfulRemote,
   removeBookRemote,
+  resetSortRemote,
   setRatingsRemote,
 } from "./modules/storage.js";
 import {
   clearHandfulSession,
   createFreshHandfulSession,
   createHandfulSession,
+  dealHandful,
   estimatedHandfulScreens,
   handfulProgress,
   loadHandfulSession,
-  resetAllRatings,
   saveHandfulSession,
   skipHandfulBook,
   submitHandful,
@@ -95,6 +96,7 @@ const els = {
   compareDone: document.getElementById("compare-done"),
   compareToRankings: document.getElementById("compare-to-rankings"),
   resortBtn: document.getElementById("resort-btn"),
+  keepRankingBtn: document.getElementById("keep-ranking-btn"),
   handfulList: document.getElementById("handful-list"),
   handfulSubmit: /** @type {HTMLButtonElement | null} */ (
     document.getElementById("handful-submit")
@@ -216,8 +218,8 @@ function renderLibrary() {
       : books.length === 1
         ? "1 book · add one more to start sorting."
         : progress.done
-          ? `${books.length} books · shelf sorted`
-          : `${books.length} books · ${progress.placed} on the shelf · ~${est} handfuls to finish`;
+          ? `${books.length} books · shelf warmed up`
+          : `${books.length} books · ${progress.placed}/${progress.total} warmed · ~${est} handfuls to stabilize`;
 }
 
 function renderCompare() {
@@ -231,7 +233,7 @@ function renderCompare() {
   ensureSortSession();
   const progress = handfulProgress(sortSession, state.books);
 
-  if (progress.done) {
+  if (progress.done && sortSession.phase === "done") {
     els.compareEmpty.hidden = true;
     els.compareActive.hidden = true;
     if (els.compareDone) els.compareDone.hidden = false;
@@ -244,23 +246,16 @@ function renderCompare() {
 
   if (els.handfulPromptSub) {
     els.handfulPromptSub.textContent =
-      sortSession.phase === "merge"
-        ? "Merge step — drag the best remaining titles to the top, then submit."
-        : "Drag to rearrange, then submit this handful.";
+      "Drag to rearrange — submit runs a Bradley-Terry update on every pair.";
   }
 
   renderHandfulList();
 
   const estTotal = estimatedHandfulScreens(state.books.length);
-  const phaseLabel =
-    sortSession.phase === "merge" ? "Merging runs" : "Grouping";
-  els.compareProgress.textContent = `${phaseLabel} · ${progress.placed} of ${progress.total} on the shelf · handful ${progress.handfulsCompleted + 1} · ~${estTotal} screens total`;
-  if (els.handfulSubmit) els.handfulSubmit.disabled = busy || sortSession.handful.length === 0;
+  els.compareProgress.textContent = `Handful ${progress.handfulsCompleted + 1} · ${progress.placed}/${progress.total} books at ${progress.targetComparisons}+ comparisons · ~${estTotal} handfuls to warm up`;
+  if (els.handfulSubmit) els.handfulSubmit.disabled = busy || sortSession.handful.length < 2;
   els.undoBtn.disabled = busy || !(sortSession?.undoStack.length > 0);
-  els.skipBtn.disabled =
-    busy ||
-    sortSession.phase !== "group" ||
-    sortSession.handful.length === 0;
+  els.skipBtn.disabled = busy || sortSession.handful.length < 2;
 }
 
 function renderHandfulList() {
@@ -333,13 +328,11 @@ function renderRankings() {
   }
   els.rankingsEmpty.hidden = true;
 
-  const placed = [...state.books]
-    .filter((b) => b.rating !== INITIAL_RATING)
-    .sort((a, b) => b.rating - a.rating);
-  const unplaced = [...state.books]
-    .filter((b) => b.rating === INITIAL_RATING)
-    .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
-  const ranked = [...placed, ...unplaced];
+  const ranked = [...state.books].sort(
+    (a, b) =>
+      b.rating - a.rating ||
+      a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
+  );
 
   for (let i = 0; i < ranked.length; i++) {
     const book = ranked[i];
@@ -356,13 +349,8 @@ function renderRankings() {
 
     const score = document.createElement("div");
     score.className = "rank-score";
-    if (book.rating === INITIAL_RATING) {
-      score.textContent = "—";
-      score.title = "Not placed yet";
-    } else {
-      score.textContent = `#${placed.indexOf(book) + 1}`;
-      score.title = "Shelf position";
-    }
+    score.textContent = `#${i + 1}`;
+    score.title = `Rating ${book.rating} · ${book.comparisons} comparisons`;
 
     li.append(badge, meta, score);
     els.rankingsList.append(li);
@@ -389,7 +377,7 @@ function renderStats() {
     { label: "Re-read titles", value: String(rereadCount) },
     { label: "Extra reads", value: String(extraReads) },
     {
-      label: "Books placed",
+      label: "Warmed up",
       value:
         totalBooks < 2
           ? "—"
@@ -566,17 +554,18 @@ async function removeBook(id) {
  * Submit the current handful order.
  */
 async function submitCurrentHandful() {
-  if (!sortSession || busy || sortSession.handful.length === 0) return;
+  if (!sortSession || busy || sortSession.handful.length < 2) return;
   busy = true;
   if (els.handfulSubmit) els.handfulSubmit.disabled = true;
 
   syncHandfulOrderFromDom();
   const previousSession = sortSession;
+  const orderedIds = [...sortSession.handful];
 
   try {
-    const result = submitHandful(sortSession, sortSession.handful, state.books);
+    const result = submitHandful(sortSession, orderedIds, state.books);
     if (result.ratingUpdates.length > 0) {
-      await setRatingsRemote(result.ratingUpdates);
+      await recordHandfulRemote(orderedIds, result.ratingUpdates);
     }
     sortSession = result.session;
     saveHandfulSession(sortSession);
@@ -590,7 +579,7 @@ async function submitCurrentHandful() {
   } finally {
     busy = false;
     if (els.handfulSubmit) {
-      els.handfulSubmit.disabled = !sortSession || sortSession.handful.length === 0;
+      els.handfulSubmit.disabled = !sortSession || sortSession.handful.length < 2;
     }
   }
 }
@@ -617,13 +606,13 @@ els.compareToRankings?.addEventListener("click", () => {
 els.resortBtn?.addEventListener("click", () => {
   if (state.books.length < 2) return;
   const ok = window.confirm(
-    "Start a fresh sort? Your current shelf order will be rebuilt from scratch."
+    "Start a fresh sort? Ratings and comparison counts will reset."
   );
   if (!ok) return;
   void (async () => {
     try {
       busy = true;
-      await setRatingsRemote(resetAllRatings(state.books));
+      await resetSortRemote();
       await refreshState();
       clearHandfulSession();
       sortSession = createFreshHandfulSession(state.books);
@@ -636,6 +625,16 @@ els.resortBtn?.addEventListener("click", () => {
       busy = false;
     }
   })();
+});
+
+els.keepRankingBtn?.addEventListener("click", () => {
+  if (!sortSession || state.books.length < 2) return;
+  sortSession = dealHandful(
+    { ...sortSession, phase: "ranking" },
+    state.books
+  );
+  saveHandfulSession(sortSession);
+  renderCompare();
 });
 
 els.addForm.addEventListener("submit", (e) => {
@@ -738,9 +737,9 @@ els.handfulSubmit?.addEventListener("click", () => {
 
 els.skipBtn.addEventListener("click", () => {
   if (!sortSession || state.books.length < 2 || busy) return;
-  const first = sortSession.handful[sortSession.handful.length - 1];
-  if (!first) return;
-  sortSession = skipHandfulBook(sortSession, first);
+  const skipId = sortSession.handful[sortSession.handful.length - 1];
+  if (!skipId) return;
+  sortSession = skipHandfulBook(sortSession, skipId, state.books);
   saveHandfulSession(sortSession);
   renderCompare();
 });

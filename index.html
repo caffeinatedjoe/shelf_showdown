@@ -15,7 +15,7 @@
       <div class="header-row">
         <div>
           <h1 class="brand">Shelf Showdown</h1>
-          <p class="tagline">Rank a handful of books at a time — drag to order, then submit.</p>
+          <p class="tagline">Rank random handfuls — drag to order, then Bradley-Terry updates your shelf.</p>
         </div>
         <div id="account-bar" class="account-bar" hidden>
           <span id="account-email" class="account-email"></span>
@@ -56,7 +56,7 @@
       <!-- Compare (default when library is ready) -->
       <section id="view-compare" class="view active" role="tabpanel">
         <h2 class="view-title">Sort Your Shelf</h2>
-        <p class="view-lede">Drag up to five books into best → worst order, then submit. Group, then merge — far fewer screens than pairwise picks.</p>
+        <p class="view-lede">Each round draws up to five books at random. Drag best → worst, submit, and ratings update with a Bradley-Terry (Elo) pass over every pair in that order.</p>
 
         <div id="compare-empty" class="empty-state" hidden>
           <p>Add at least two books to start sorting.</p>
@@ -64,9 +64,10 @@
         </div>
 
         <div id="compare-done" class="empty-state" hidden>
-          <p>Your shelf is fully sorted. Rankings shows the final order. Add more books anytime to place them.</p>
+          <p>Your shelf is warmed up — every title has enough comparisons for a stable ranking. Keep going anytime to refine it, or start fresh.</p>
           <div class="compare-actions">
             <button type="button" id="compare-to-rankings" class="btn btn-raised">See rankings</button>
+            <button type="button" id="keep-ranking-btn" class="btn btn-flat">Keep ranking</button>
             <button type="button" id="resort-btn" class="btn btn-flat">Sort again from scratch</button>
           </div>
         </div>
@@ -89,7 +90,7 @@
       <!-- Rankings -->
       <section id="view-rankings" class="view" role="tabpanel" hidden>
         <h2 class="view-title">Top Shelf</h2>
-        <p class="view-lede">Your personal order from handful sorting.</p>
+        <p class="view-lede">Your personal order from Bradley-Terry ratings.</p>
         <ol id="rankings-list" class="rankings-list"></ol>
         <p id="rankings-empty" class="empty-state" hidden>No books yet. Import or add some to see rankings.</p>
       </section>

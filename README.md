@@ -1,13 +1,13 @@
 # Shelf Showdown
 
-Rank your books in handfuls of five: drag to set best → worst, submit, and merge runs into a full shelf order — far fewer screens than pairwise picks.
+Rank your books in random handfuls of five: drag to set best → worst, submit, and a Bradley-Terry (Elo) pass updates ratings from every pair in that order.
 
 ## MVP features
 
 - **Accounts** — email/password sign-up and sign-in (Convex Auth)
 - **Library** — add books manually, import a CSV, or load from a public Google Sheets URL
-- **Sort** — rank up to five books at a time (drag + submit), then merge into one shelf
-- **Rankings** — live ordered shelf from completed placements
+- **Sort** — rank up to five random books at a time (drag + submit); ratings update via Bradley-Terry
+- **Rankings** — live ordered shelf from current ratings
 - **Rereads** — books finished more than once, sorted by times read
 
 Data is stored in [Convex](https://convex.dev) with email/password auth via Convex Auth. Sign up once; your library and rankings persist to your account across devices.
