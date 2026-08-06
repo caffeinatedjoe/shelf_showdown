@@ -124,6 +124,22 @@ export async function setRatingsRemote(updates) {
   await convexMutation("books:setRatings", { updates });
 }
 
+/**
+ * @param {string[]} orderedIds best → worst
+ * @param {{ bookId: string, rating: number }[]} ratingUpdates
+ */
+export async function recordHandfulRemote(orderedIds, ratingUpdates) {
+  await convexMutation("comparisons:recordHandful", {
+    orderedIds,
+    ratingUpdates,
+  });
+}
+
+/** Reset ratings + comparison counts before a fresh sort. */
+export async function resetSortRemote() {
+  await convexMutation("books:resetForSort", {});
+}
+
 /** Kept for local pair-picking helpers that still need ephemeral ids. */
 export function createId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {

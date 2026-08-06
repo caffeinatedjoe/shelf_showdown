@@ -141,3 +141,79 @@ export const undoLast = mutation({
     return last;
   },
 });
+
+/**
+ * Record a handful ranking: adjacent pair history, comparison counts, and
+ * Bradley-Terry / Elo rating updates in one transaction.
+ */
+export const recordHandful = mutation({
+  args: {
+    orderedIds: v.array(v.id("books")),
+    ratingUpdates: v.array(
+      v.object({
+        bookId: v.id("books"),
+        rating: v.number(),
+      })
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const library = await requireLibraryForUser(ctx);
+    if (args.orderedIds.length < 2) {
+      throw new Error("Need at least two books in a handful");
+    }
+
+    const unique = new Set(args.orderedIds.map(String));
+    if (unique.size !== args.orderedIds.length) {
+      throw new Error("Handful contains duplicate books");
+    }
+
+    /** @type {Map<string, { rating: number, comparisons: number }>} */
+    const before = new Map();
+    for (const bookId of args.orderedIds) {
+      const book = await assertBookInLibrary(ctx, library._id, bookId);
+      before.set(bookId, {
+        rating: book.rating,
+        comparisons: book.comparisons,
+      });
+    }
+
+    const bump = args.orderedIds.length - 1;
+    const now = Date.now();
+
+    // Adjacent pairs for history (best → worst).
+    for (let i = 0; i < args.orderedIds.length - 1; i++) {
+      const winnerId = args.orderedIds[i];
+      const loserId = args.orderedIds[i + 1];
+      const winnerBefore = before.get(winnerId);
+      const loserBefore = before.get(loserId);
+      if (!winnerBefore || !loserBefore) continue;
+      await ctx.db.insert("comparisons", {
+        libraryId: library._id,
+        bookAId: winnerId,
+        bookBId: loserId,
+        winnerId,
+        ratingA: winnerBefore.rating,
+        ratingB: loserBefore.rating,
+        timestamp: now + i,
+      });
+    }
+
+    for (const bookId of args.orderedIds) {
+      const prev = before.get(bookId);
+      if (!prev) continue;
+      await ctx.db.patch(bookId, {
+        comparisons: prev.comparisons + bump,
+      });
+    }
+
+    for (const update of args.ratingUpdates) {
+      const book = await assertBookInLibrary(ctx, library._id, update.bookId);
+      if (book.rating !== update.rating) {
+        await ctx.db.patch(book._id, { rating: update.rating });
+      }
+    }
+
+    return null;
+  },
+});

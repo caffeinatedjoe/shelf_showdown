@@ -1,5 +1,5 @@
 /**
- * Node test suite for handful (group-of-5) ranking.
+ * Node test suite for random handful + Bradley-Terry ranking.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
@@ -7,14 +7,16 @@ import { INITIAL_RATING } from "./storage.js";
 import {
   createFreshHandfulSession,
   createHandfulSession,
-  dealHandful,
   estimatedHandfulScreens,
   handfulProgress,
-  rebalanceRatings,
-  setHandfulOrder,
+  pickRandomHandfulIds,
   submitHandful,
   undoHandful,
 } from "./handful.js";
+import {
+  expectedScore,
+  ratingUpdatesFromRanking,
+} from "./ranking.js";
 
 /**
  * @param {number} n
@@ -31,130 +33,104 @@ function makeBooks(n) {
   }));
 }
 
-/**
- * Prefer lower id index as better (b0 best).
- * @param {string[]} ids
- */
-function orderByIndex(ids) {
-  return [...ids].sort((a, b) => {
-    const na = Number(a.slice(1));
-    const nb = Number(b.slice(1));
-    return na - nb;
+describe("Bradley-Terry ratingUpdatesFromRanking", () => {
+  it("raises the top book and lowers the bottom", () => {
+    const ids = ["a", "b", "c"];
+    const ratings = new Map([
+      ["a", 1500],
+      ["b", 1500],
+      ["c", 1500],
+    ]);
+    const updates = ratingUpdatesFromRanking(ids, ratings);
+    const byId = Object.fromEntries(updates.map((u) => [u.bookId, u.rating]));
+    assert.ok(byId.a > 1500);
+    assert.ok(byId.c < 1500);
+    assert.ok(byId.a > byId.b);
+    assert.ok(byId.b > byId.c);
   });
-}
 
-/**
- * Drive a session to completion with a known total order.
- * @param {ReturnType<typeof makeBooks>} books
- */
-function sortAll(books) {
-  let session = createFreshHandfulSession(books);
-  let guard = 0;
-  while (session.phase !== "done" && guard < 5000) {
-    guard += 1;
-    if (session.handful.length === 0) {
-      session = dealHandful(session);
-      if (session.handful.length === 0) break;
-    }
-    const ordered = orderByIndex(session.handful);
-    const result = submitHandful(session, ordered, books);
-    session = result.session;
-    for (const u of result.ratingUpdates) {
-      const book = books.find((b) => b.id === u.bookId);
-      if (book) book.rating = u.rating;
-    }
-  }
-  return session;
-}
+  it("moves less when the favorite already looks stronger", () => {
+    const ids = ["strong", "weak"];
+    const even = ratingUpdatesFromRanking(
+      ids,
+      new Map([
+        ["strong", 1500],
+        ["weak", 1500],
+      ])
+    );
+    const skewed = ratingUpdatesFromRanking(
+      ids,
+      new Map([
+        ["strong", 1800],
+        ["weak", 1200],
+      ])
+    );
+    const evenDelta = even[0].rating - 1500;
+    const skewedDelta = skewed[0].rating - 1800;
+    assert.ok(Math.abs(evenDelta) > Math.abs(skewedDelta));
+  });
 
-describe("handful sorting", () => {
-  it("deals up to five books in group phase", () => {
+  it("expectedScore is 0.5 for equal ratings", () => {
+    assert.equal(expectedScore(1500, 1500), 0.5);
+  });
+});
+
+describe("handful sorting (BT)", () => {
+  it("deals a random-ish handful of up to five", () => {
     const books = makeBooks(12);
     const session = createFreshHandfulSession(books);
-    assert.equal(session.phase, "group");
+    assert.equal(session.phase, "ranking");
     assert.equal(session.handful.length, 5);
-    assert.equal(session.pool.length, 7);
+    // Not the first five titles in order (legacy alphabetical deal).
+    assert.notDeepEqual(session.handful, ["b0", "b1", "b2", "b3", "b4"]);
   });
 
-  it("produces a full total order for 12 books", () => {
-    const books = makeBooks(12);
-    const session = sortAll(books);
-    assert.equal(session.phase, "done");
-    assert.deepEqual(
-      session.rankedIds,
-      Array.from({ length: 12 }, (_, i) => `b${i}`)
-    );
-  });
-
-  it("produces a full total order for 20 books", () => {
+  it("pickRandomHandfulIds returns unique ids", () => {
     const books = makeBooks(20);
-    const session = sortAll(books);
-    assert.equal(session.phase, "done");
-    assert.deepEqual(
-      session.rankedIds,
-      Array.from({ length: 20 }, (_, i) => `b${i}`)
+    const ids = pickRandomHandfulIds(books, [], 5);
+    assert.equal(ids.length, 5);
+    assert.equal(new Set(ids).size, 5);
+  });
+
+  it("submit applies BT updates and deals again", () => {
+    const books = makeBooks(10);
+    let session = createHandfulSession(books);
+    const ordered = [...session.handful];
+    const result = submitHandful(session, ordered, books);
+    assert.equal(result.ratingUpdates.length, ordered.length);
+    assert.ok(result.session.handfulsCompleted >= 1);
+    assert.ok(result.session.handful.length >= 2);
+    assert.ok(result.pairs.length >= 1);
+
+    const top = result.ratingUpdates.find((u) => u.bookId === ordered[0]);
+    const bottom = result.ratingUpdates.find(
+      (u) => u.bookId === ordered[ordered.length - 1]
     );
-  });
-
-  it("handles libraries smaller than five", () => {
-    const books = makeBooks(3);
-    const session = sortAll(books);
-    assert.equal(session.phase, "done");
-    assert.deepEqual(session.rankedIds, ["b0", "b1", "b2"]);
-  });
-
-  it("setHandfulOrder rejects mismatched ids", () => {
-    const books = makeBooks(5);
-    const session = createFreshHandfulSession(books);
-    const bad = setHandfulOrder(session, ["nope"]);
-    assert.equal(bad, session);
+    assert.ok(top && bottom);
+    assert.ok(top.rating > bottom.rating);
   });
 
   it("undo restores prior session", () => {
-    const books = makeBooks(5);
-    let session = createFreshHandfulSession(books);
-    const ordered = orderByIndex(session.handful);
-    const result = submitHandful(session, ordered, books);
-    assert.ok(result.session.handfulsCompleted >= 1);
+    const books = makeBooks(8);
+    let session = createHandfulSession(books);
+    const result = submitHandful(session, [...session.handful], books);
     const undone = undoHandful(result.session);
     assert.ok(undone);
     assert.equal(undone.session.handfulsCompleted, 0);
-    assert.equal(undone.session.phase, "group");
-    assert.equal(undone.session.handful.length, 5);
+    assert.equal(undone.priorRatings.length, result.priorRatings.length);
   });
 
-  it("resumes with already-ranked books as a run", () => {
-    const books = makeBooks(8);
-    books[0].rating = 900_000;
-    books[1].rating = 800_000;
-    books[2].rating = 700_000;
+  it("progress tracks comparison warmth", () => {
+    const books = makeBooks(6);
     const session = createHandfulSession(books);
-    assert.equal(session.phase, "group");
-    assert.ok(session.runs.length >= 1);
-    assert.deepEqual(session.runs[0], ["b0", "b1", "b2"]);
-    assert.equal(session.handful.length, 5);
-  });
-
-  it("rebalanceRatings spaces best to worst", () => {
-    const updates = rebalanceRatings(["a", "b", "c"]);
-    assert.equal(updates[0].rating, 1_000_000);
-    assert.equal(updates[2].rating, 0);
-    assert.ok(updates[1].rating < updates[0].rating);
-  });
-
-  it("estimatedHandfulScreens is far below pairwise n log n for large n", () => {
-    const n = 400;
-    const handful = estimatedHandfulScreens(n);
-    let binary = 0;
-    for (let k = 1; k < n; k++) binary += Math.ceil(Math.log2(k + 1));
-    assert.ok(handful < binary / 3);
-  });
-
-  it("progress reports done when finished", () => {
-    const books = makeBooks(4);
-    const session = sortAll(books);
     const progress = handfulProgress(session, books);
-    assert.equal(progress.done, true);
-    assert.equal(progress.placed, 4);
+    assert.equal(progress.done, false);
+    assert.equal(progress.placed, 0);
+    assert.ok(progress.targetComparisons >= 6);
+  });
+
+  it("estimatedHandfulScreens grows with library size", () => {
+    assert.ok(estimatedHandfulScreens(400) > estimatedHandfulScreens(50));
+    assert.ok(estimatedHandfulScreens(1) === 0);
   });
 });

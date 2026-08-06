@@ -1,17 +1,19 @@
 import { INITIAL_RATING } from "./storage.js";
+import {
+  adjacentPairsFromRanking,
+  ratingUpdatesFromRanking,
+} from "./ranking.js";
 
 /**
- * Handful sorting: rank groups of up to 5 (best → worst), then merge runs
- * by repeatedly ranking the heads of active runs.
+ * Random handful ranking with Bradley-Terry (Elo) updates.
+ * Each submit expands the dragged order into pairwise outcomes and updates ratings.
  *
  * @typedef {import("./storage.js").Book} Book
  *
  * @typedef {{
- *   phase: "group" | "merge" | "done",
- *   pool: string[],
- *   runs: string[][],
- *   rankedIds: string[],
+ *   phase: "ranking" | "done",
  *   handful: string[],
+ *   recentIds: string[],
  *   handfulsCompleted: number,
  *   undoStack: HandfulUndo[],
  * }} HandfulSession
@@ -22,9 +24,19 @@ import { INITIAL_RATING } from "./storage.js";
  * }} HandfulUndo
  */
 
-const RATING_CEILING = 1_000_000;
 const HANDFUL_SIZE = 5;
+const RECENT_LIMIT = 12;
 const SESSION_KEY = "shelf-showdown-handful-session";
+
+/**
+ * Target comparisons per book before we consider the shelf "warmed up".
+ * @param {number} n
+ */
+export function targetComparisonsPerBook(n) {
+  if (n < 2) return 0;
+  // Roughly a few full handfuls of opponents each (~ log-ish growth).
+  return Math.max(6, Math.ceil(2.5 * Math.log2(n)));
+}
 
 /**
  * @returns {HandfulSession}
@@ -32,44 +44,11 @@ const SESSION_KEY = "shelf-showdown-handful-session";
 function emptySession() {
   return {
     phase: "done",
-    pool: [],
-    runs: [],
-    rankedIds: [],
     handful: [],
+    recentIds: [],
     handfulsCompleted: 0,
     undoStack: [],
   };
-}
-
-/**
- * @param {Book[]} books
- * @returns {string[]}
- */
-function sortedUnrankedIds(books) {
-  return [...books]
-    .filter((b) => b.rating === INITIAL_RATING)
-    .sort(
-      (a, b) =>
-        (b.timesRead ?? 1) - (a.timesRead ?? 1) ||
-        a.createdAt - b.createdAt ||
-        a.title.localeCompare(b.title)
-    )
-    .map((b) => b.id);
-}
-
-/**
- * @param {Book[]} books
- * @returns {string[]}
- */
-function rankedIdsFromRatings(books) {
-  return [...books]
-    .filter((b) => b.rating !== INITIAL_RATING)
-    .sort(
-      (a, b) =>
-        b.rating - a.rating ||
-        a.title.localeCompare(b.title, undefined, { sensitivity: "base" })
-    )
-    .map((b) => b.id);
 }
 
 /**
@@ -79,12 +58,6 @@ function rankedIdsFromRatings(books) {
  */
 function shuffle(items) {
   const copy = [...items];
-  if (
-    typeof process !== "undefined" &&
-    process.env?.SHELF_SHOWDOWN_TEST === "1"
-  ) {
-    return copy;
-  }
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     const tmp = copy[i];
@@ -95,22 +68,77 @@ function shuffle(items) {
 }
 
 /**
- * @param {HandfulSession} session
- * @returns {HandfulSession}
+ * Deterministic shuffle for tests (rotate by 1) so order isn't title-sorted.
+ * @template T
+ * @param {T[]} items
  */
-function cloneSession(session) {
-  return {
-    phase: session.phase,
-    pool: [...session.pool],
-    runs: session.runs.map((r) => [...r]),
-    rankedIds: [...session.rankedIds],
-    handful: [...session.handful],
-    handfulsCompleted: session.handfulsCompleted,
-    undoStack: session.undoStack.map((u) => ({
-      session: cloneSessionWithoutUndo(u.session),
-      priorRatings: u.priorRatings.map((p) => ({ ...p })),
-    })),
-  };
+function testShuffle(items) {
+  if (items.length < 2) return [...items];
+  return [...items.slice(1), items[0]];
+}
+
+/**
+ * @template T
+ * @param {T[]} items
+ */
+function maybeShuffle(items) {
+  if (
+    typeof process !== "undefined" &&
+    process.env?.SHELF_SHOWDOWN_TEST === "1"
+  ) {
+    return testShuffle(items);
+  }
+  return shuffle(items);
+}
+
+/**
+ * Weighted random sample favoring under-compared books; avoids recent when possible.
+ * @param {Book[]} books
+ * @param {string[]} recentIds
+ * @param {number} size
+ * @returns {string[]}
+ */
+export function pickRandomHandfulIds(books, recentIds = [], size = HANDFUL_SIZE) {
+  if (books.length === 0) return [];
+  const take = Math.min(size, books.length);
+  const recent = new Set(recentIds);
+
+  /** @type {{ id: string, weight: number }[]} */
+  const candidates = books.map((b) => {
+    const underCompared = 1 / (1 + (b.comparisons ?? 0));
+    const recencyPenalty = recent.has(b.id) ? 0.08 : 1;
+    // Small noise so ties don't collapse to insertion / title order.
+    const noise =
+      typeof process !== "undefined" && process.env?.SHELF_SHOWDOWN_TEST === "1"
+        ? (b.id.charCodeAt(b.id.length - 1) % 7) * 0.01
+        : Math.random() * 0.35;
+    return {
+      id: b.id,
+      weight: Math.max(0.001, underCompared * recencyPenalty + noise),
+    };
+  });
+
+  /** @type {string[]} */
+  const picked = [];
+  const pool = [...candidates];
+
+  while (picked.length < take && pool.length > 0) {
+    const total = pool.reduce((sum, c) => sum + c.weight, 0);
+    let r =
+      typeof process !== "undefined" && process.env?.SHELF_SHOWDOWN_TEST === "1"
+        ? total * 0.37 // fixed but not first-item bias
+        : Math.random() * total;
+    let idx = 0;
+    for (; idx < pool.length; idx++) {
+      r -= pool[idx].weight;
+      if (r <= 0) break;
+    }
+    if (idx >= pool.length) idx = pool.length - 1;
+    picked.push(pool[idx].id);
+    pool.splice(idx, 1);
+  }
+
+  return maybeShuffle(picked);
 }
 
 /**
@@ -120,10 +148,8 @@ function cloneSession(session) {
 function cloneSessionWithoutUndo(session) {
   return {
     phase: session.phase,
-    pool: [...session.pool],
-    runs: session.runs.map((r) => [...r]),
-    rankedIds: [...session.rankedIds],
     handful: [...session.handful],
+    recentIds: [...session.recentIds],
     handfulsCompleted: session.handfulsCompleted,
     undoStack: [],
   };
@@ -131,77 +157,24 @@ function cloneSessionWithoutUndo(session) {
 
 /**
  * @param {HandfulSession} session
+ * @param {Book[]} books
  * @returns {HandfulSession}
  */
-export function dealHandful(session) {
-  let next = {
+export function dealHandful(session, books) {
+  if (books.length < 2) {
+    return { ...session, phase: "done", handful: [] };
+  }
+
+  const target = targetComparisonsPerBook(books.length);
+  const warmed = books.every((b) => (b.comparisons ?? 0) >= target);
+
+  const handful = pickRandomHandfulIds(books, session.recentIds, HANDFUL_SIZE);
+  return {
     ...session,
-    pool: [...session.pool],
-    runs: session.runs.map((r) => [...r]),
-    rankedIds: [...session.rankedIds],
-    handful: [],
+    phase: warmed ? "done" : "ranking",
+    // Even when "done", still deal a handful so the user can keep refining.
+    handful: handful.length >= 2 ? handful : pickRandomHandfulIds(books, [], HANDFUL_SIZE),
   };
-
-  if (next.phase === "done") {
-    return next;
-  }
-
-  if (next.phase === "group") {
-    if (next.pool.length === 0) {
-      return beginMergeOrFinish(next);
-    }
-    const take = Math.min(HANDFUL_SIZE, next.pool.length);
-    next.handful = shuffle(next.pool.slice(0, take));
-    next.pool = next.pool.slice(take);
-    return next;
-  }
-
-  // merge: rank heads of up to HANDFUL_SIZE non-empty runs
-  const active = next.runs
-    .map((run, index) => ({ run, index }))
-    .filter(({ run }) => run.length > 0);
-
-  if (active.length === 0) {
-    return { ...next, phase: "done", handful: [] };
-  }
-
-  if (active.length === 1) {
-    const only = active[0];
-    next.rankedIds = [...next.rankedIds, ...only.run];
-    next.runs[only.index] = [];
-    next.runs = next.runs.filter((r) => r.length > 0);
-    return { ...next, phase: "done", handful: [] };
-  }
-
-  const heads = active.slice(0, HANDFUL_SIZE);
-  next.handful = shuffle(heads.map(({ run }) => run[0]));
-  return next;
-}
-
-/**
- * @param {HandfulSession} session
- * @returns {HandfulSession}
- */
-function beginMergeOrFinish(session) {
-  const runs = session.runs.filter((r) => r.length > 0);
-  if (runs.length === 0) {
-    return { ...session, runs: [], phase: "done", handful: [] };
-  }
-  if (runs.length === 1) {
-    return {
-      ...session,
-      runs: [],
-      rankedIds: [...session.rankedIds, ...runs[0]],
-      phase: "done",
-      handful: [],
-    };
-  }
-  return dealHandful({
-    ...session,
-    runs,
-    phase: "merge",
-    handful: [],
-  });
 }
 
 /**
@@ -209,67 +182,28 @@ function beginMergeOrFinish(session) {
  * @returns {HandfulSession}
  */
 export function createHandfulSession(books) {
-  if (books.length === 0) return emptySession();
-
-  const alreadyRanked = rankedIdsFromRatings(books);
-  const pool = sortedUnrankedIds(books);
-
-  if (pool.length === 0) {
-    return {
-      phase: "done",
-      pool: [],
-      runs: [],
-      rankedIds: alreadyRanked,
+  if (books.length < 2) return emptySession();
+  return dealHandful(
+    {
+      phase: "ranking",
       handful: [],
+      recentIds: [],
       handfulsCompleted: 0,
       undoStack: [],
-    };
-  }
-
-  /** @type {HandfulSession} */
-  const base = {
-    phase: "group",
-    pool,
-    runs: alreadyRanked.length > 0 ? [alreadyRanked] : [],
-    rankedIds: [],
-    handful: [],
-    handfulsCompleted: 0,
-    undoStack: [],
-  };
-
-  // Existing ranked shelf is one run; new books are grouped then merged in.
-  return dealHandful(base);
+    },
+    books
+  );
 }
 
 /**
- * Ignore prior ratings and sort the whole library from scratch.
  * @param {Book[]} books
  * @returns {HandfulSession}
  */
 export function createFreshHandfulSession(books) {
-  if (books.length === 0) return emptySession();
-  const pool = [...books]
-    .sort(
-      (a, b) =>
-        (b.timesRead ?? 1) - (a.timesRead ?? 1) ||
-        a.createdAt - b.createdAt ||
-        a.title.localeCompare(b.title)
-    )
-    .map((b) => b.id);
-
-  return dealHandful({
-    phase: "group",
-    pool,
-    runs: [],
-    rankedIds: [],
-    handful: [],
-    handfulsCompleted: 0,
-    undoStack: [],
-  });
+  return createHandfulSession(books);
 }
 
 /**
- * Reorder the current handful (best → worst).
  * @param {HandfulSession} session
  * @param {string[]} orderedIds
  * @returns {HandfulSession}
@@ -286,9 +220,7 @@ export function setHandfulOrder(session, orderedIds) {
 }
 
 /**
- * Submit the current handful order.
- * Group phase → store as a sorted run.
- * Merge phase → emit the best book onto the shelf.
+ * Submit the current handful: BT rating updates + deal the next random set.
  *
  * @param {HandfulSession} session
  * @param {string[]} orderedIds best → worst
@@ -297,76 +229,63 @@ export function setHandfulOrder(session, orderedIds) {
  *   session: HandfulSession,
  *   ratingUpdates: { bookId: string, rating: number }[],
  *   priorRatings: { bookId: string, rating: number }[],
+ *   pairs: { winnerId: string, loserId: string }[],
  * }}
  */
 export function submitHandful(session, orderedIds, books) {
   const ordered = setHandfulOrder(session, orderedIds);
-  if (ordered.handful.length === 0 || ordered.phase === "done") {
-    return { session, ratingUpdates: [], priorRatings: [] };
+  if (ordered.handful.length < 2) {
+    return { session, ratingUpdates: [], priorRatings: [], pairs: [] };
   }
 
   const snapshot = cloneSessionWithoutUndo(session);
-  let next = {
-    ...ordered,
-    runs: ordered.runs.map((r) => [...r]),
-    rankedIds: [...ordered.rankedIds],
-    pool: [...ordered.pool],
-    undoStack: [...ordered.undoStack],
-  };
-
-  /** @type {string[]} */
-  let affectedRanked = [];
-
-  if (next.phase === "group") {
-    next.runs.push([...next.handful]);
-    next.handful = [];
-    next.handfulsCompleted += 1;
-    next = dealHandful(next);
-    // Ratings update when we first produce rankedIds (single-run finish or merge emits)
-    if (next.rankedIds.length > 0) {
-      affectedRanked = [...next.rankedIds];
-    }
-  } else if (next.phase === "merge") {
-    const winnerId = next.handful[0];
-    if (!winnerId) {
-      return { session, ratingUpdates: [], priorRatings: [] };
-    }
-
-    const runIndex = next.runs.findIndex(
-      (run) => run.length > 0 && run[0] === winnerId
-    );
-    if (runIndex < 0) {
-      return { session, ratingUpdates: [], priorRatings: [] };
-    }
-
-    next.runs[runIndex] = next.runs[runIndex].slice(1);
-    next.rankedIds.push(winnerId);
-    next.handful = [];
-    next.handfulsCompleted += 1;
-    next.runs = next.runs.filter((r) => r.length > 0);
-    next = dealHandful({ ...next, phase: "merge" });
-    affectedRanked = [...next.rankedIds];
-  }
-
-  const ratingUpdates =
-    affectedRanked.length > 0 ? rebalanceRatings(affectedRanked) : [];
-
   const byId = new Map(books.map((b) => [b.id, b]));
+  /** @type {Map<string, number>} */
+  const ratingMap = new Map(books.map((b) => [b.id, b.rating]));
+
+  const ratingUpdates = ratingUpdatesFromRanking(ordered.handful, ratingMap);
+  const pairs = adjacentPairsFromRanking(ordered.handful);
   const priorRatings = ratingUpdates.map((u) => ({
     bookId: u.bookId,
     rating: byId.get(u.bookId)?.rating ?? INITIAL_RATING,
   }));
 
-  next.undoStack = [
-    ...next.undoStack,
+  // Optimistically bump local comparison counts for the next deal weights.
+  const nextBooks = books.map((b) => {
+    if (!ordered.handful.includes(b.id)) return b;
+    const update = ratingUpdates.find((u) => u.bookId === b.id);
+    return {
+      ...b,
+      rating: update?.rating ?? b.rating,
+      comparisons: (b.comparisons ?? 0) + (ordered.handful.length - 1),
+    };
+  });
+
+  const recentIds = [...ordered.handful, ...session.recentIds].slice(
+    0,
+    RECENT_LIMIT
+  );
+
+  const undoStack = [
+    ...session.undoStack,
     { session: snapshot, priorRatings },
   ].slice(-40);
 
-  return { session: next, ratingUpdates, priorRatings };
+  const next = dealHandful(
+    {
+      phase: "ranking",
+      handful: [],
+      recentIds,
+      handfulsCompleted: session.handfulsCompleted + 1,
+      undoStack,
+    },
+    nextBooks
+  );
+
+  return { session: next, ratingUpdates, priorRatings, pairs };
 }
 
 /**
- * Undo the last handful submit.
  * @param {HandfulSession} session
  * @returns {{ session: HandfulSession, priorRatings: { bookId: string, rating: number }[] } | null}
  */
@@ -377,7 +296,7 @@ export function undoHandful(session) {
   if (!last) return null;
   return {
     session: {
-      ...cloneSession(last.session),
+      ...cloneSessionWithoutUndo(last.session),
       undoStack: stack,
     },
     priorRatings: last.priorRatings,
@@ -385,29 +304,28 @@ export function undoHandful(session) {
 }
 
 /**
- * Put one book from the current handful back and draw a replacement if possible.
+ * Replace one book in the current handful with another random title.
  * @param {HandfulSession} session
  * @param {string} bookId
+ * @param {Book[]} books
  * @returns {HandfulSession}
  */
-export function skipHandfulBook(session, bookId) {
-  if (!session.handful.includes(bookId) || session.phase !== "group") {
+export function skipHandfulBook(session, bookId, books) {
+  if (!session.handful.includes(bookId) || books.length < 3) {
     return session;
   }
-  if (session.handful.length <= 1 && session.pool.length === 0) {
-    return session;
-  }
-
   const remaining = session.handful.filter((id) => id !== bookId);
-  let pool = [...session.pool];
-  const need = Math.min(HANDFUL_SIZE - remaining.length, pool.length);
-  const drawn = pool.slice(0, need);
-  pool = [...pool.slice(need), bookId];
+  const exclude = new Set([...remaining, bookId, ...session.recentIds]);
+  const replacements = books.filter((b) => !exclude.has(b.id));
+  const pool = replacements.length > 0 ? replacements : books.filter((b) => b.id !== bookId && !remaining.includes(b.id));
+  if (pool.length === 0) return session;
+
+  const nextId = pickRandomHandfulIds(pool, [], 1)[0];
+  if (!nextId) return session;
 
   return {
     ...session,
-    handful: shuffle([...remaining, ...drawn]),
-    pool,
+    handful: maybeShuffle([...remaining, nextId]),
   };
 }
 
@@ -417,73 +335,30 @@ export function skipHandfulBook(session, bookId) {
  * @returns {HandfulSession}
  */
 export function syncHandfulWithBooks(session, books) {
-  const ids = new Set(books.map((b) => b.id));
-  const filterIds = (arr) => arr.filter((id) => ids.has(id));
+  if (books.length < 2) return emptySession();
 
+  const ids = new Set(books.map((b) => b.id));
   let next = {
     ...session,
-    pool: filterIds(session.pool),
-    rankedIds: filterIds(session.rankedIds),
-    handful: filterIds(session.handful),
-    runs: session.runs.map(filterIds).filter((r) => r.length > 0),
+    handful: session.handful.filter((id) => ids.has(id)),
+    recentIds: session.recentIds.filter((id) => ids.has(id)),
+    // Drop undo across library edits — ratings may have changed under us.
     undoStack: [],
   };
 
-  const known = new Set([
-    ...next.pool,
-    ...next.rankedIds,
-    ...next.handful,
-    ...next.runs.flat(),
-  ]);
-
-  for (const book of books) {
-    if (known.has(book.id)) continue;
-    if (book.rating !== INITIAL_RATING) {
-      // Newly loaded ranked book — fold into merge runs
-      next.runs.push([book.id]);
-    } else {
-      next.pool.push(book.id);
-    }
+  // Migrate legacy group/merge sessions.
+  if (session.phase === "group" || session.phase === "merge") {
+    return createHandfulSession(books);
   }
 
-  if (next.phase === "done" && (next.pool.length > 0 || next.runs.length > 1)) {
-    next.phase = next.pool.length > 0 ? "group" : "merge";
-  }
-
-  if (next.handful.length === 0 && next.phase !== "done") {
-    next = dealHandful(next);
-  }
-
-  if (
-    next.phase !== "done" &&
-    next.handful.length === 0 &&
-    next.pool.length === 0 &&
-    next.runs.every((r) => r.length === 0)
-  ) {
-    next = { ...next, phase: "done" };
+  if (next.handful.length < 2) {
+    next = dealHandful(next, books);
   }
 
   return next;
 }
 
 /**
- * @param {string[]} rankedIds
- * @returns {{ bookId: string, rating: number }[]}
- */
-export function rebalanceRatings(rankedIds) {
-  const n = rankedIds.length;
-  if (n === 0) return [];
-  if (n === 1) {
-    return [{ bookId: rankedIds[0], rating: Math.round(RATING_CEILING / 2) }];
-  }
-  return rankedIds.map((bookId, idx) => ({
-    bookId,
-    rating: Math.round(RATING_CEILING - (RATING_CEILING * idx) / (n - 1)),
-  }));
-}
-
-/**
- * Ratings to reset every book before a fresh sort.
  * @param {Book[]} books
  * @returns {{ bookId: string, rating: number }[]}
  */
@@ -497,38 +372,45 @@ export function resetAllRatings(books) {
  */
 export function handfulProgress(session, books) {
   const total = books.length;
-  const placed = session.rankedIds.length;
-  const inRuns = session.runs.reduce((sum, r) => sum + r.length, 0);
-  const inHandful = session.handful.length;
-  const remaining = Math.max(0, total - placed);
+  const target = targetComparisonsPerBook(total);
+  const comparisonCounts = books.map((b) => b.comparisons ?? 0);
+  const warmedCount = comparisonCounts.filter((c) => c >= target).length;
+  const minComparisons =
+    comparisonCounts.length === 0 ? 0 : Math.min(...comparisonCounts);
+  const avgComparisons =
+    comparisonCounts.length === 0
+      ? 0
+      : comparisonCounts.reduce((a, b) => a + b, 0) / comparisonCounts.length;
+
   const done =
     session.phase === "done" ||
-    (placed === total && inHandful === 0 && session.pool.length === 0);
+    (total >= 2 && warmedCount === total);
 
   return {
-    placed,
+    placed: warmedCount,
     total,
-    remaining,
-    inHandful,
-    inRuns,
-    poolLeft: session.pool.length,
+    remaining: Math.max(0, total - warmedCount),
+    inHandful: session.handful.length,
+    targetComparisons: target,
+    minComparisons,
+    avgComparisons,
     handfulsCompleted: session.handfulsCompleted,
-    phase: session.phase,
+    phase: session.phase === "done" ? "done" : "ranking",
     done,
   };
 }
 
 /**
- * Rough screen count: ceil(n/5) group deals + ~n merge emits (flush last run).
+ * Rough handfuls to warm every book to the comparison target.
  * @param {number} n
  */
 export function estimatedHandfulScreens(n) {
   if (n < 2) return 0;
-  const groupScreens = Math.ceil(n / HANDFUL_SIZE);
-  // Merge emits one book per screen until a single run remains, then flushes.
-  // With ~n/5 initial runs, roughly n - 5 books are emitted one-by-one.
-  const mergeScreens = Math.max(0, n - HANDFUL_SIZE);
-  return groupScreens + mergeScreens;
+  const perBook = targetComparisonsPerBook(n);
+  // Each handful gives (size-1) comparisons to each of `size` books.
+  const size = Math.min(HANDFUL_SIZE, n);
+  const compsPerHandful = size * (size - 1);
+  return Math.ceil((n * perBook) / compsPerHandful);
 }
 
 /**
@@ -537,7 +419,10 @@ export function estimatedHandfulScreens(n) {
 export function saveHandfulSession(session) {
   try {
     const toSave = {
-      ...session,
+      phase: session.phase,
+      handful: session.handful,
+      recentIds: session.recentIds,
+      handfulsCompleted: session.handfulsCompleted,
       undoStack: session.undoStack.map((u) => ({
         session: cloneSessionWithoutUndo(u.session),
         priorRatings: u.priorRatings,
@@ -561,13 +446,18 @@ export function loadHandfulSession(books) {
     if (!parsed || !Array.isArray(parsed.handful)) {
       return createHandfulSession(books);
     }
+
+    // Legacy merge/group sessions → start fresh random BT flow.
+    if (parsed.phase === "group" || parsed.phase === "merge" || Array.isArray(parsed.runs)) {
+      clearHandfulSession();
+      return createHandfulSession(books);
+    }
+
     /** @type {HandfulSession} */
     const session = {
-      phase: parsed.phase === "merge" || parsed.phase === "done" ? parsed.phase : "group",
-      pool: Array.isArray(parsed.pool) ? parsed.pool : [],
-      runs: Array.isArray(parsed.runs) ? parsed.runs : [],
-      rankedIds: Array.isArray(parsed.rankedIds) ? parsed.rankedIds : [],
+      phase: parsed.phase === "done" ? "done" : "ranking",
       handful: Array.isArray(parsed.handful) ? parsed.handful : [],
+      recentIds: Array.isArray(parsed.recentIds) ? parsed.recentIds : [],
       handfulsCompleted: Number(parsed.handfulsCompleted) || 0,
       undoStack: Array.isArray(parsed.undoStack) ? parsed.undoStack : [],
     };
@@ -580,11 +470,10 @@ export function loadHandfulSession(books) {
 export function clearHandfulSession() {
   try {
     sessionStorage.removeItem(SESSION_KEY);
-    // Also clear legacy binary-insertion key so old sessions don't confuse
     sessionStorage.removeItem("shelf-showdown-sort-session");
   } catch {
     // ignore
   }
 }
 
-export { HANDFUL_SIZE, RATING_CEILING };
+export { HANDFUL_SIZE, adjacentPairsFromRanking };
