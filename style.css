@@ -32,30 +32,34 @@
 html {
   -webkit-text-size-adjust: 100%;
   color-scheme: light;
+  height: 100%;
+  overflow: hidden;
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
+  height: 100%;
+  overflow: hidden;
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.5;
   color: var(--ink);
   background: linear-gradient(180deg, #f7fafc 0%, var(--bg) 45%, var(--bg-soft) 100%);
-  background-attachment: fixed;
 }
 
 #app {
   position: relative;
   width: min(100%, 28rem);
+  height: 100%;
+  max-height: 100dvh;
   margin: 0 auto;
-  padding: 1rem 1rem 1.5rem;
-  min-height: 100vh;
+  padding: 0.65rem 0.85rem 0;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.55rem;
   isolation: isolate;
+  overflow: hidden;
 }
 
 .app-shell {
@@ -64,7 +68,7 @@ body {
   flex: 1;
   min-height: 0;
   gap: 0;
-  padding-bottom: calc(var(--nav-h) + 0.5rem);
+  overflow: hidden;
 }
 
 .app-pattern {
@@ -81,12 +85,13 @@ body {
 /* —— Header / brand —— */
 .app-header {
   text-align: center;
-  padding: 0.35rem 0 0.15rem;
+  padding: 0.15rem 0 0;
   animation: fade-down 0.5s ease both;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .brand-logo {
@@ -167,8 +172,12 @@ body {
 .auth-panel {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.85rem;
   animation: fade-down 0.45s ease both;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-bottom: 0.85rem;
 }
 
 .auth-form {
@@ -186,13 +195,19 @@ body {
 #main {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* —— Views —— */
 .view {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.65rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
   animation: rise-in 0.4s ease both;
 }
 
@@ -200,10 +215,33 @@ body {
   display: none;
 }
 
+#view-rankings,
+#view-stats,
+#view-library {
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 0.35rem;
+}
+
+#view-compare {
+  overflow: hidden;
+}
+
+#compare-active {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 0.45rem;
+  overflow: hidden;
+}
+
 .view-header {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.3rem;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .round-label {
@@ -374,8 +412,8 @@ body {
 .btn-pill {
   width: 100%;
   border-radius: 999px;
-  min-height: 3.15rem;
-  font-size: 1rem;
+  min-height: 2.75rem;
+  font-size: 0.95rem;
   letter-spacing: 0.08em;
   box-shadow:
     0 10px 22px rgba(93, 167, 184, 0.4),
@@ -570,12 +608,13 @@ body {
 .handful-prompt {
   margin: 0;
   display: grid;
-  gap: 0.2rem;
+  gap: 0.1rem;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .handful-prompt-title {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -585,7 +624,7 @@ body {
 
 .handful-prompt-sub {
   color: var(--ink-muted);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 .handful-list {
@@ -594,10 +633,12 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.4rem;
   position: relative;
   touch-action: none;
   user-select: none;
+  flex: 1;
+  min-height: 0;
 }
 
 .handful-list.is-reordering .handful-item:not(.is-dragging) {
@@ -610,7 +651,7 @@ body {
   align-items: stretch;
   gap: 0;
   padding: 0;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   border: none;
   background: var(--card);
   box-shadow: var(--shadow-soft);
@@ -618,6 +659,9 @@ body {
   overflow: hidden;
   animation: fade-down 0.35s ease both;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
+  flex: 1 1 0;
+  min-height: 2.75rem;
+  max-height: 4.5rem;
 }
 
 .handful-item.is-first {
@@ -640,10 +684,12 @@ body {
 
 .handful-placeholder {
   list-style: none;
-  border-radius: var(--radius);
+  border-radius: var(--radius-sm);
   border: 1.5px dashed rgba(93, 167, 184, 0.5);
   background: rgba(93, 167, 184, 0.1);
-  flex-shrink: 0;
+  flex: 1 1 0;
+  min-height: 2.75rem;
+  max-height: 4.5rem;
 }
 
 .handful-handle {
@@ -664,9 +710,9 @@ body {
   place-items: center;
   width: 100%;
   height: 100%;
-  min-height: 3.5rem;
+  min-height: 0;
   font-weight: 800;
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   letter-spacing: 0.02em;
   color: #fff;
   background: transparent;
@@ -682,10 +728,10 @@ body {
 }
 
 .handful-cover {
-  width: 2.75rem;
+  width: clamp(1.85rem, 8vh, 2.5rem);
   aspect-ratio: var(--cover-ratio);
-  margin: 0.65rem 0.15rem 0.65rem 0.55rem;
-  border-radius: 0.35rem;
+  margin: 0.4rem 0.1rem 0.4rem 0.4rem;
+  border-radius: 0.3rem;
   overflow: hidden;
   background: linear-gradient(160deg, var(--mint) 0%, var(--teal-soft) 100%);
   box-shadow: 0 3px 8px rgba(26, 42, 58, 0.12);
@@ -700,19 +746,34 @@ body {
 .handful-cover-tone-4 { background: linear-gradient(160deg, #e4dce8, #b8a0c4); }
 
 .handful-item .book-meta {
-  padding: 0.75rem 0.85rem 0.75rem 0.45rem;
+  padding: 0.45rem 0.7rem 0.45rem 0.35rem;
+}
+
+.handful-item .book-meta strong {
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.handful-item .book-meta span {
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .handful-footer {
   display: grid;
-  gap: 0.45rem;
-  margin-top: 0.35rem;
+  gap: 0.3rem;
+  margin-top: 0;
+  flex-shrink: 0;
 }
 
 .handful-submit-caption {
   margin: 0;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -720,8 +781,19 @@ body {
 }
 
 .handful-actions {
-  margin-top: 0.25rem;
-  flex-wrap: wrap;
+  margin-top: 0.1rem;
+  flex-wrap: nowrap;
+}
+
+.handful-actions .btn {
+  min-height: 2.25rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.78rem;
+  flex: 1;
+}
+
+#compare-progress:empty {
+  display: none;
 }
 
 .compare-actions {
@@ -734,7 +806,7 @@ body {
 
 .empty-state {
   margin: 0;
-  padding: 2rem 1.25rem;
+  padding: 1.5rem 1.1rem;
   text-align: center;
   color: var(--ink-muted);
   border-radius: var(--radius);
@@ -743,8 +815,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  gap: 0.85rem;
   box-shadow: var(--shadow-soft);
+  flex: 1;
+  min-height: 0;
 }
 
 .empty-state p {
@@ -870,21 +945,24 @@ body {
 
 /* —— Bottom nav —— */
 .bottom-nav {
-  position: fixed;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  width: min(100%, 28rem);
+  position: relative;
+  left: auto;
+  bottom: auto;
+  transform: none;
+  width: 100%;
+  flex-shrink: 0;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.1rem;
-  padding: 0.45rem 0.35rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
   background: rgba(255, 255, 255, 0.94);
   border-top: 1px solid var(--line);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 -6px 20px rgba(26, 42, 58, 0.06);
   z-index: 20;
+  margin-inline: -0.85rem;
+  width: calc(100% + 1.7rem);
 }
 
 .nav-item {
@@ -989,24 +1067,44 @@ body {
 @media (min-width: 640px) {
   #app {
     width: min(100%, 32rem);
-    padding: 1.5rem 1.5rem 2rem;
-    gap: 1.25rem;
-  }
-
-  .app-shell {
-    padding-bottom: calc(var(--nav-h) + 1rem);
+    padding: 0.85rem 1.15rem 0;
+    gap: 0.65rem;
   }
 
   .bottom-nav {
-    width: min(100%, 32rem);
+    margin-inline: -1.15rem;
+    width: calc(100% + 2.3rem);
   }
 
   .brand-logo {
-    font-size: 2rem;
+    font-size: 1.85rem;
   }
 
   .handful-cover {
-    width: 3.1rem;
+    width: clamp(2.1rem, 7vh, 2.85rem);
+  }
+}
+
+@media (max-height: 700px) {
+  .brand-logo {
+    font-size: 1.35rem;
+  }
+
+  .account-bar {
+    display: none;
+  }
+
+  .handful-prompt-sub,
+  .handful-submit-caption {
+    display: none;
+  }
+
+  .handful-item {
+    max-height: 3.6rem;
+  }
+
+  .btn-pill {
+    min-height: 2.5rem;
   }
 }
 
