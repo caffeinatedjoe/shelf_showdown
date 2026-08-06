@@ -6,25 +6,31 @@
   <title>Shelf Showdown</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
+    <div class="app-pattern" aria-hidden="true"></div>
+
     <header class="app-header">
-      <div class="header-row">
-        <div>
-          <h1 class="brand">Shelf Showdown</h1>
-          <p class="tagline">Rank a handful of books at a time — drag to order, then submit.</p>
-        </div>
-        <div id="account-bar" class="account-bar" hidden>
-          <span id="account-email" class="account-email"></span>
-          <button type="button" id="sign-out-btn" class="btn btn-flat">Sign out</button>
-        </div>
+      <p class="brand-logo" aria-label="Shelf Showdown">
+        <span class="brand-shelf">Shelf</span>
+        <svg class="brand-mark" viewBox="0 0 32 24" aria-hidden="true" focusable="false">
+          <path class="brand-page-l" d="M15.2 2.2 3.5 5.2v13.2L15.2 21V2.2Z" />
+          <path class="brand-page-r" d="M16.8 2.2 28.5 5.2v13.2L16.8 21V2.2Z" />
+          <path class="brand-spine" d="M16 2.5v18.2" />
+          <path class="brand-line" d="M6.2 9.2h7.2M6.2 12.4h7.2M18.6 9.2h7.2M18.6 12.4h7.2" />
+        </svg>
+        <span class="brand-showdown">Showdown</span>
+      </p>
+      <div id="account-bar" class="account-bar" hidden>
+        <span id="account-email" class="account-email"></span>
+        <button type="button" id="sign-out-btn" class="btn btn-flat btn-sm">Sign out</button>
       </div>
     </header>
 
-    <section id="auth-panel" class="auth-panel" aria-label="Account">
+    <section id="auth-panel" class="auth-panel panel-card" aria-label="Account">
       <h2 class="view-title">Create your account</h2>
       <p class="view-lede">You’ll need an account to save your library and rankings across devices.</p>
       <form id="auth-form" class="auth-form">
@@ -44,124 +50,154 @@
       <p id="auth-status" class="status" aria-live="polite"></p>
     </section>
 
-    <div id="app-shell" hidden>
-    <nav class="tabs" role="tablist" aria-label="Main">
-      <button type="button" class="tab active" role="tab" aria-selected="true" data-view="compare">Sort</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" data-view="rankings">Rankings</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" data-view="stats">Stats</button>
-      <button type="button" class="tab" role="tab" aria-selected="false" data-view="library">Library</button>
-    </nav>
-
-    <main id="main">
-      <!-- Compare (default when library is ready) -->
-      <section id="view-compare" class="view active" role="tabpanel">
-        <h2 class="view-title">Sort Your Shelf</h2>
-        <p class="view-lede">Drag up to five books into best → worst order, then submit. Group, then merge — far fewer screens than pairwise picks.</p>
-
-        <div id="compare-empty" class="empty-state" hidden>
-          <p>Add at least two books to start sorting.</p>
-          <button type="button" id="compare-to-library" class="btn btn-raised">Set up library</button>
-        </div>
-
-        <div id="compare-done" class="empty-state" hidden>
-          <p>Your shelf is fully sorted. Rankings shows the final order. Add more books anytime to place them.</p>
-          <div class="compare-actions">
-            <button type="button" id="compare-to-rankings" class="btn btn-raised">See rankings</button>
-            <button type="button" id="resort-btn" class="btn btn-flat">Sort again from scratch</button>
+    <div id="app-shell" class="app-shell" hidden>
+      <main id="main">
+        <!-- Compare (default when library is ready) -->
+        <section id="view-compare" class="view active" role="tabpanel">
+          <div class="view-header">
+            <p class="round-label" id="compare-round-label">Round 1: Rank your top 5</p>
+            <div class="progress-row" id="compare-progress-row" aria-label="Sorting progress">
+              <div class="progress-track">
+                <div class="progress-fill" id="compare-progress-fill" style="width: 0%"></div>
+              </div>
+              <span class="progress-count" id="compare-progress-count">0/0</span>
+            </div>
           </div>
-        </div>
 
-        <div id="compare-active">
-          <p class="handful-prompt" id="handful-prompt">
-            <span class="handful-prompt-title">Best on top</span>
-            <span class="handful-prompt-sub" id="handful-prompt-sub">Drag to rearrange, then submit this handful.</span>
-          </p>
-          <ol class="handful-list" id="handful-list" aria-label="Drag to rank these books"></ol>
-          <div class="compare-actions handful-actions">
-            <button type="button" id="handful-submit" class="btn btn-raised">Submit order</button>
-            <button type="button" id="skip-btn" class="btn btn-flat">Skip book</button>
-            <button type="button" id="undo-btn" class="btn btn-flat">Undo</button>
+          <div id="compare-empty" class="empty-state" hidden>
+            <p>Add at least two books to start sorting.</p>
+            <button type="button" id="compare-to-library" class="btn btn-raised">Set up library</button>
           </div>
-          <p id="compare-progress" class="status" aria-live="polite"></p>
-        </div>
-      </section>
 
-      <!-- Rankings -->
-      <section id="view-rankings" class="view" role="tabpanel" hidden>
-        <h2 class="view-title">Top Shelf</h2>
-        <p class="view-lede">Your personal order from handful sorting.</p>
-        <ol id="rankings-list" class="rankings-list"></ol>
-        <p id="rankings-empty" class="empty-state" hidden>No books yet. Import or add some to see rankings.</p>
-      </section>
+          <div id="compare-done" class="empty-state" hidden>
+            <p>Your shelf is fully sorted. Rankings shows the final order. Add more books anytime to place them.</p>
+            <div class="compare-actions">
+              <button type="button" id="compare-to-rankings" class="btn btn-raised">See rankings</button>
+              <button type="button" id="resort-btn" class="btn btn-flat">Sort again from scratch</button>
+            </div>
+          </div>
 
-      <!-- Stats -->
-      <section id="view-stats" class="view" role="tabpanel" hidden>
-        <h2 class="view-title">Your Shelf Stats</h2>
-        <p class="view-lede">Totals, re-reads, and how your library has grown over time.</p>
+          <div id="compare-active">
+            <p class="handful-prompt" id="handful-prompt">
+              <span class="handful-prompt-title">Best on top</span>
+              <span class="handful-prompt-sub" id="handful-prompt-sub">Drag to rearrange, then lock in your ranks.</span>
+            </p>
+            <ol class="handful-list" id="handful-list" aria-label="Drag to rank these books"></ol>
+            <div class="handful-footer">
+              <button type="button" id="handful-submit" class="btn btn-raised btn-pill">
+                Lock in my ranks
+              </button>
+              <p class="handful-submit-caption">Submit your final rankings.</p>
+              <div class="compare-actions handful-actions">
+                <button type="button" id="skip-btn" class="btn btn-flat">Skip book</button>
+                <button type="button" id="undo-btn" class="btn btn-flat">Undo</button>
+              </div>
+            </div>
+            <p id="compare-progress" class="status" aria-live="polite"></p>
+          </div>
+        </section>
 
-        <div id="stats-summary" class="stats-grid" aria-live="polite"></div>
+        <!-- Rankings -->
+        <section id="view-rankings" class="view" role="tabpanel" hidden>
+          <div class="view-header">
+            <h2 class="view-title">Top Shelf</h2>
+            <p class="view-lede">Your personal order from handful sorting.</p>
+          </div>
+          <ol id="rankings-list" class="rankings-list"></ol>
+          <p id="rankings-empty" class="empty-state" hidden>No books yet. Import or add some to see rankings.</p>
+        </section>
 
-        <div id="stats-monthly" class="stats-section" hidden>
-          <h3 class="stats-heading">Books added by month</h3>
-          <ul id="monthly-chart" class="monthly-chart" aria-label="Books added per month"></ul>
-        </div>
+        <!-- Stats -->
+        <section id="view-stats" class="view" role="tabpanel" hidden>
+          <div class="view-header">
+            <h2 class="view-title">Your Shelf Stats</h2>
+            <p class="view-lede">Totals, re-reads, and how your library has grown over time.</p>
+          </div>
 
-        <div class="stats-section">
-          <h3 class="stats-heading">Most re-read</h3>
-          <ol id="rereads-list" class="rankings-list"></ol>
-          <p id="rereads-empty" class="empty-state" hidden>No re-reads yet. Import a reading log with the same title listed more than once.</p>
-        </div>
-      </section>
+          <div id="stats-summary" class="stats-grid" aria-live="polite"></div>
 
-      <!-- Library (setup / management) -->
-      <section id="view-library" class="view" role="tabpanel" hidden>
-        <h2 class="view-title">My Library</h2>
-        <p class="view-lede">Add titles manually, import a CSV, or pull from a public Google Sheet. Once you have two or more, sorting is ready.</p>
+          <div id="stats-monthly" class="stats-section" hidden>
+            <h3 class="stats-heading">Books added by month</h3>
+            <ul id="monthly-chart" class="monthly-chart" aria-label="Books added per month"></ul>
+          </div>
 
-        <div id="library-ready-cta" class="library-cta" hidden>
-          <p>Your library is ready.</p>
-          <button type="button" id="library-to-compare" class="btn btn-raised">Start sorting</button>
-        </div>
+          <div class="stats-section">
+            <h3 class="stats-heading">Most re-read</h3>
+            <ol id="rereads-list" class="rankings-list"></ol>
+            <p id="rereads-empty" class="empty-state" hidden>No re-reads yet. Import a reading log with the same title listed more than once.</p>
+          </div>
+        </section>
 
-        <form id="add-book-form" class="add-form">
-          <label class="field">
-            <span>Title</span>
-            <input type="text" id="book-title" name="title" required autocomplete="off" placeholder="The Left Hand of Darkness" />
-          </label>
-          <label class="field">
-            <span>Author</span>
-            <input type="text" id="book-author" name="author" required autocomplete="off" placeholder="Ursula K. Le Guin" />
-          </label>
-          <button type="submit" class="btn btn-raised">Add book</button>
-        </form>
+        <!-- Library (setup / management) -->
+        <section id="view-library" class="view" role="tabpanel" hidden>
+          <div class="view-header">
+            <h2 class="view-title">My Library</h2>
+            <p class="view-lede">Add titles manually, import a CSV, or pull from a public Google Sheet. Once you have two or more, sorting is ready.</p>
+          </div>
 
-        <form id="sheets-import-form" class="sheets-form">
-          <label class="field">
-            <span>Google Sheets URL</span>
-            <input
-              type="url"
-              id="sheets-url"
-              name="sheetsUrl"
-              autocomplete="off"
-              placeholder="https://docs.google.com/spreadsheets/d/…"
-            />
-          </label>
-          <button type="submit" class="btn btn-raised" id="sheets-import-btn">Import sheet</button>
-        </form>
-        <p class="hint">Sheet must be shared with “Anyone with the link”. Title and author columns are detected automatically. Duplicate rows count as re-reads; other columns are ignored.</p>
+          <div id="library-ready-cta" class="library-cta" hidden>
+            <p>Your library is ready.</p>
+            <button type="button" id="library-to-compare" class="btn btn-raised">Start sorting</button>
+          </div>
 
-        <div class="import-row">
-          <label class="btn btn-flat file-label">
-            Import CSV
-            <input type="file" id="csv-input" accept=".csv,text/csv" hidden />
-          </label>
-          <button type="button" id="clear-library-btn" class="btn btn-flat danger">Clear all</button>
-        </div>
+          <form id="add-book-form" class="add-form panel-card">
+            <label class="field">
+              <span>Title</span>
+              <input type="text" id="book-title" name="title" required autocomplete="off" placeholder="The Left Hand of Darkness" />
+            </label>
+            <label class="field">
+              <span>Author</span>
+              <input type="text" id="book-author" name="author" required autocomplete="off" placeholder="Ursula K. Le Guin" />
+            </label>
+            <button type="submit" class="btn btn-raised">Add book</button>
+          </form>
 
-        <p id="library-status" class="status" aria-live="polite"></p>
-        <ul id="book-list" class="book-list"></ul>
-      </section>
-    </main>
+          <form id="sheets-import-form" class="sheets-form panel-card">
+            <label class="field">
+              <span>Google Sheets URL</span>
+              <input
+                type="url"
+                id="sheets-url"
+                name="sheetsUrl"
+                autocomplete="off"
+                placeholder="https://docs.google.com/spreadsheets/d/…"
+              />
+            </label>
+            <button type="submit" class="btn btn-raised" id="sheets-import-btn">Import sheet</button>
+          </form>
+          <p class="hint">Sheet must be shared with “Anyone with the link”. Title and author columns are detected automatically. Duplicate rows count as re-reads; other columns are ignored.</p>
+
+          <div class="import-row">
+            <label class="btn btn-flat file-label">
+              Import CSV
+              <input type="file" id="csv-input" accept=".csv,text/csv" hidden />
+            </label>
+            <button type="button" id="clear-library-btn" class="btn btn-flat danger">Clear all</button>
+          </div>
+
+          <p id="library-status" class="status" aria-live="polite"></p>
+          <ul id="book-list" class="book-list"></ul>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" role="tablist" aria-label="Main">
+        <button type="button" class="nav-item tab active" role="tab" aria-selected="true" data-view="compare">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h5v16H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm7 0h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5V4Z"/></svg>
+          <span>Showdown</span>
+        </button>
+        <button type="button" class="nav-item tab" role="tab" aria-selected="false" data-view="rankings">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 20V9l5-5 5 5v11"/><path d="M9.5 20v-6h5v6"/></svg>
+          <span>Board</span>
+        </button>
+        <button type="button" class="nav-item tab" role="tab" aria-selected="false" data-view="stats">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V10M12 19V5M19 19v-7"/></svg>
+          <span>Stats</span>
+        </button>
+        <button type="button" class="nav-item tab" role="tab" aria-selected="false" data-view="library">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Zm9-.5h5.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H13V5Z"/></svg>
+          <span>Library</span>
+        </button>
+      </nav>
     </div>
   </div>
 

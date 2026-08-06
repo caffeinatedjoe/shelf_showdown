@@ -103,6 +103,9 @@ const els = {
   skipBtn: document.getElementById("skip-btn"),
   undoBtn: document.getElementById("undo-btn"),
   compareProgress: document.getElementById("compare-progress"),
+  compareRoundLabel: document.getElementById("compare-round-label"),
+  compareProgressFill: document.getElementById("compare-progress-fill"),
+  compareProgressCount: document.getElementById("compare-progress-count"),
   rankingsList: document.getElementById("rankings-list"),
   rankingsEmpty: document.getElementById("rankings-empty"),
 };
@@ -189,6 +192,10 @@ function renderLibrary() {
 
   for (const book of books) {
     const li = document.createElement("li");
+    const accent = document.createElement("div");
+    accent.className = "list-accent";
+    accent.setAttribute("aria-hidden", "true");
+
     const meta = document.createElement("div");
     meta.className = "book-meta";
     meta.innerHTML = `<strong></strong><span></span>`;
@@ -202,7 +209,7 @@ function renderLibrary() {
     remove.textContent = "×";
     remove.addEventListener("click", () => void removeBook(book.id));
 
-    li.append(meta, remove);
+    li.append(accent, meta, remove);
     els.bookList.append(li);
   }
 
@@ -225,6 +232,11 @@ function renderCompare() {
     els.compareEmpty.hidden = false;
     els.compareActive.hidden = true;
     if (els.compareDone) els.compareDone.hidden = true;
+    if (els.compareRoundLabel) {
+      els.compareRoundLabel.textContent = "Round 1: Rank your top 5";
+    }
+    if (els.compareProgressFill) els.compareProgressFill.style.width = "0%";
+    if (els.compareProgressCount) els.compareProgressCount.textContent = "0/0";
     return;
   }
 
@@ -235,6 +247,13 @@ function renderCompare() {
     els.compareEmpty.hidden = true;
     els.compareActive.hidden = true;
     if (els.compareDone) els.compareDone.hidden = false;
+    if (els.compareRoundLabel) {
+      els.compareRoundLabel.textContent = "Shelf sorted";
+    }
+    if (els.compareProgressFill) els.compareProgressFill.style.width = "100%";
+    if (els.compareProgressCount) {
+      els.compareProgressCount.textContent = `${progress.total}/${progress.total}`;
+    }
     return;
   }
 
@@ -245,8 +264,8 @@ function renderCompare() {
   if (els.handfulPromptSub) {
     els.handfulPromptSub.textContent =
       sortSession.phase === "merge"
-        ? "Merge step — drag the best remaining titles to the top, then submit."
-        : "Drag to rearrange, then submit this handful.";
+        ? "Merge step — drag the best remaining titles to the top, then lock in."
+        : "Drag to rearrange, then lock in your ranks.";
   }
 
   renderHandfulList();
@@ -254,7 +273,25 @@ function renderCompare() {
   const estTotal = estimatedHandfulScreens(state.books.length);
   const phaseLabel =
     sortSession.phase === "merge" ? "Merging runs" : "Grouping";
-  els.compareProgress.textContent = `${phaseLabel} · ${progress.placed} of ${progress.total} on the shelf · handful ${progress.handfulsCompleted + 1} · ~${estTotal} screens total`;
+  const roundNum = progress.handfulsCompleted + 1;
+  const handfulSize = Math.max(sortSession.handful.length, 1);
+  if (els.compareRoundLabel) {
+    els.compareRoundLabel.textContent =
+      sortSession.phase === "merge"
+        ? `Round ${roundNum}: Merge your top picks`
+        : `Round ${roundNum}: Rank your top ${handfulSize}`;
+  }
+  const pct =
+    progress.total > 0
+      ? Math.min(100, Math.round((progress.placed / progress.total) * 100))
+      : 0;
+  if (els.compareProgressFill) {
+    els.compareProgressFill.style.width = `${pct}%`;
+  }
+  if (els.compareProgressCount) {
+    els.compareProgressCount.textContent = `${progress.placed}/${progress.total}`;
+  }
+  els.compareProgress.textContent = `${phaseLabel} · ${progress.placed} of ${progress.total} on the shelf · handful ${roundNum} · ~${estTotal} screens total`;
   if (els.handfulSubmit) els.handfulSubmit.disabled = busy || sortSession.handful.length === 0;
   els.undoBtn.disabled = busy || !(sortSession?.undoStack.length > 0);
   els.skipBtn.disabled =
@@ -283,21 +320,30 @@ function renderHandfulList() {
     const rank = document.createElement("span");
     rank.className = "handful-rank";
     rank.textContent = String(index + 1);
-    const grip = document.createElement("span");
-    grip.className = "handful-grip";
-    grip.setAttribute("aria-hidden", "true");
-    grip.innerHTML = "<span></span><span></span><span></span>";
-    handle.append(rank, grip);
+    handle.append(rank);
+
+    const cover = document.createElement("div");
+    cover.className = `handful-cover handful-cover-tone-${index % 5}`;
+    cover.setAttribute("aria-hidden", "true");
 
     const meta = document.createElement("div");
     meta.className = "book-meta";
     const title = document.createElement("strong");
     title.textContent = book.title;
-    const author = document.createElement("span");
-    author.textContent = book.author;
-    meta.append(title, author);
+    const authorRow = document.createElement("span");
+    authorRow.className = "meta-row";
+    authorRow.innerHTML = `<span class="meta-label">Author:</span> `;
+    authorRow.append(document.createTextNode(book.author));
+    meta.append(title, authorRow);
+    const times = book.timesRead ?? 1;
+    if (times > 1) {
+      const reread = document.createElement("span");
+      reread.className = "meta-row";
+      reread.innerHTML = `<span class="meta-label">Reads:</span> ${times}`;
+      meta.append(reread);
+    }
 
-    li.append(handle, meta);
+    li.append(handle, cover, meta);
     els.handfulList.append(li);
   });
 }
