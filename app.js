@@ -53,6 +53,25 @@ let busy = false;
  * } | null} */
 let drag = null;
 
+/** Horizontal swipe vs vertical drag intent (mobile / app layout). */
+const SWIPE_THRESHOLD = 40;
+const GESTURE_ANGLE_RATIO = 1.05;
+const GESTURE_INTENT_PX = 12;
+
+/** @type {{
+ *   mode: "pending" | "swipe" | "ignore",
+ *   pointerId: number,
+ *   startX: number,
+ *   startY: number,
+ *   lastX: number,
+ *   lastY: number,
+ *   item: HTMLElement | null,
+ * } | null} */
+let pointerGesture = null;
+
+/** @type {number} */
+let swipeToastTimer = 0;
+
 const els = {
   tabs: document.querySelectorAll(".tab"),
   views: {
@@ -102,6 +121,7 @@ const els = {
   handfulPromptSub: document.getElementById("handful-prompt-sub"),
   skipBtn: document.getElementById("skip-btn"),
   undoBtn: document.getElementById("undo-btn"),
+  swipeToast: document.getElementById("swipe-toast"),
   compareProgress: document.getElementById("compare-progress"),
   compareRoundLabel: document.getElementById("compare-round-label"),
   compareProgressFill: document.getElementById("compare-progress-fill"),
@@ -261,11 +281,25 @@ function renderCompare() {
   els.compareEmpty.hidden = true;
   els.compareActive.hidden = false;
 
-  if (els.handfulPromptSub) {
-    els.handfulPromptSub.textContent =
-      sortSession.phase === "merge"
-        ? "Merge step — drag the best remaining titles to the top, then lock in."
-        : "Drag to rearrange, then lock in your ranks.";
+  const promptTouch = els.handfulPromptSub?.querySelector(".prompt-touch");
+  const promptDesktop = els.handfulPromptSub?.querySelector(".prompt-desktop");
+  if (sortSession.phase === "merge") {
+    if (promptTouch) {
+      promptTouch.textContent =
+        "Merge step — drag the best remaining to the top. Swipe left to undo.";
+    }
+    if (promptDesktop) {
+      promptDesktop.textContent =
+        "Merge step — drag the best remaining titles to the top, then lock in.";
+    }
+  } else {
+    if (promptTouch) {
+      promptTouch.textContent =
+        "Drag to rearrange. Swipe right to skip, left to undo.";
+    }
+    if (promptDesktop) {
+      promptDesktop.textContent = "Drag to rearrange, then lock in your ranks.";
+    }
   }
 
   renderHandfulList();
@@ -782,36 +816,105 @@ els.handfulSubmit?.addEventListener("click", () => {
   void submitCurrentHandful();
 });
 
-els.skipBtn.addEventListener("click", () => {
-  if (!sortSession || state.books.length < 2 || busy) return;
-  const first = sortSession.handful[sortSession.handful.length - 1];
-  if (!first) return;
-  sortSession = skipHandfulBook(sortSession, first);
+function isDesktopLayout() {
+  return window.matchMedia("(min-width: 640px)").matches;
+}
+
+function canSkipBook() {
+  return Boolean(
+    !busy &&
+      sortSession &&
+      state.books.length >= 2 &&
+      sortSession.phase === "group" &&
+      sortSession.handful.length > 0
+  );
+}
+
+function canUndoHandful() {
+  return Boolean(!busy && sortSession && sortSession.undoStack.length > 0);
+}
+
+/** @returns {boolean} */
+function skipCurrentBook() {
+  if (!canSkipBook() || !sortSession) return false;
+  const target = sortSession.handful[sortSession.handful.length - 1];
+  if (!target) return false;
+  sortSession = skipHandfulBook(sortSession, target);
   saveHandfulSession(sortSession);
   renderCompare();
+  return true;
+}
+
+/** @returns {Promise<boolean>} */
+async function undoLastHandful() {
+  if (!canUndoHandful() || !sortSession) return false;
+  try {
+    busy = true;
+    const undone = undoHandful(sortSession);
+    if (!undone) return false;
+    if (undone.priorRatings.length > 0) {
+      await setRatingsRemote(undone.priorRatings);
+    }
+    sortSession = undone.session;
+    saveHandfulSession(sortSession);
+    await refreshState();
+    renderCompare();
+    return true;
+  } catch (err) {
+    els.compareProgress.textContent =
+      err instanceof Error ? err.message : "Could not undo.";
+    return false;
+  } finally {
+    busy = false;
+  }
+}
+
+/**
+ * @param {"left" | "right"} direction
+ * @param {string} [label]
+ */
+function showSwipeToast(direction, label) {
+  const toast = els.swipeToast;
+  if (!toast || isDesktopLayout()) return;
+  window.clearTimeout(swipeToastTimer);
+  const isLeft = direction === "left";
+  toast.hidden = false;
+  toast.textContent = label ?? (isLeft ? "Undo" : "Skip");
+  toast.classList.toggle("is-undo", isLeft);
+  toast.classList.toggle("is-skip", !isLeft);
+  toast.classList.remove("is-visible");
+  void toast.offsetWidth;
+  toast.classList.add("is-visible");
+  swipeToastTimer = window.setTimeout(() => {
+    toast.classList.remove("is-visible");
+    swipeToastTimer = window.setTimeout(() => {
+      toast.hidden = true;
+    }, 220);
+  }, 850);
+}
+
+function clearSwipeClass() {
+  els.compareActive?.classList.remove("is-swiping-left", "is-swiping-right");
+}
+
+/**
+ * @param {number} dx
+ * @param {number} dy
+ */
+function updateSwipeClass(dx, dy) {
+  clearSwipeClass();
+  if (Math.abs(dx) < GESTURE_INTENT_PX || Math.abs(dx) < Math.abs(dy) * GESTURE_ANGLE_RATIO) {
+    return;
+  }
+  els.compareActive?.classList.add(dx < 0 ? "is-swiping-left" : "is-swiping-right");
+}
+
+els.skipBtn.addEventListener("click", () => {
+  skipCurrentBook();
 });
 
 els.undoBtn.addEventListener("click", () => {
-  void (async () => {
-    if (!sortSession || busy) return;
-    try {
-      busy = true;
-      const undone = undoHandful(sortSession);
-      if (!undone) return;
-      if (undone.priorRatings.length > 0) {
-        await setRatingsRemote(undone.priorRatings);
-      }
-      sortSession = undone.session;
-      saveHandfulSession(sortSession);
-      await refreshState();
-      renderCompare();
-    } catch (err) {
-      els.compareProgress.textContent =
-        err instanceof Error ? err.message : "Could not undo.";
-    } finally {
-      busy = false;
-    }
-  })();
+  void undoLastHandful();
 });
 
 /* —— Drag reorder for the current handful —— */
@@ -866,7 +969,12 @@ function endHandfulDrag(event) {
   syncHandfulOrderFromDom();
 }
 
-function startHandfulDrag(event, item) {
+/**
+ * @param {PointerEvent} event
+ * @param {HTMLElement} item
+ * @param {number} [grabClientY]
+ */
+function startHandfulDrag(event, item, grabClientY = event.clientY) {
   if (!els.handfulList || busy) return;
   if (event.button != null && event.button !== 0) return;
   event.preventDefault();
@@ -883,7 +991,7 @@ function startHandfulDrag(event, item) {
     item,
     placeholder,
     pointerId: event.pointerId,
-    grabOffsetY: event.clientY - rect.top,
+    grabOffsetY: grabClientY - rect.top,
     height: rect.height,
   };
 
@@ -900,10 +1008,113 @@ function startHandfulDrag(event, item) {
   document.addEventListener("pointercancel", endHandfulDrag);
 }
 
-els.handfulList?.addEventListener("pointerdown", (event) => {
-  const item = event.target.closest(".handful-item");
-  if (!item || !els.handfulList.contains(item)) return;
-  startHandfulDrag(event, item);
+function detachGestureListeners() {
+  document.removeEventListener("pointermove", onGesturePointerMove);
+  document.removeEventListener("pointerup", onGesturePointerUp);
+  document.removeEventListener("pointercancel", onGesturePointerUp);
+}
+
+function onGesturePointerMove(event) {
+  if (!pointerGesture || event.pointerId !== pointerGesture.pointerId) return;
+  pointerGesture.lastX = event.clientX;
+  pointerGesture.lastY = event.clientY;
+  const dx = pointerGesture.lastX - pointerGesture.startX;
+  const dy = pointerGesture.lastY - pointerGesture.startY;
+
+  if (pointerGesture.mode === "pending") {
+    if (Math.abs(dx) < GESTURE_INTENT_PX && Math.abs(dy) < GESTURE_INTENT_PX) {
+      return;
+    }
+
+    if (Math.abs(dx) > Math.abs(dy) * GESTURE_ANGLE_RATIO) {
+      pointerGesture.mode = "swipe";
+      updateSwipeClass(dx, dy);
+      return;
+    }
+
+    if (pointerGesture.item) {
+      const item = pointerGesture.item;
+      const grabY = pointerGesture.startY;
+      detachGestureListeners();
+      pointerGesture = null;
+      clearSwipeClass();
+      startHandfulDrag(event, item, grabY);
+      return;
+    }
+
+    pointerGesture.mode = "ignore";
+    clearSwipeClass();
+    return;
+  }
+
+  if (pointerGesture.mode === "swipe") {
+    updateSwipeClass(dx, dy);
+  }
+}
+
+function onGesturePointerUp(event) {
+  if (!pointerGesture || event.pointerId !== pointerGesture.pointerId) return;
+  const gesture = pointerGesture;
+  const upDx = Math.abs(event.clientX - gesture.startX);
+  const lastDx = Math.abs(gesture.lastX - gesture.startX);
+  if (upDx >= lastDx) {
+    gesture.lastX = event.clientX;
+    gesture.lastY = event.clientY;
+  }
+  const dx = gesture.lastX - gesture.startX;
+  const dy = gesture.lastY - gesture.startY;
+  const mode = gesture.mode;
+
+  detachGestureListeners();
+  pointerGesture = null;
+  clearSwipeClass();
+
+  if (mode !== "swipe") return;
+  if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy) * GESTURE_ANGLE_RATIO) {
+    return;
+  }
+
+  if (dx < 0) {
+    void (async () => {
+      const ok = await undoLastHandful();
+      if (ok) showSwipeToast("left");
+    })();
+    return;
+  }
+
+  if (skipCurrentBook()) showSwipeToast("right");
+}
+
+els.compareActive?.addEventListener("pointerdown", (event) => {
+  if (!els.compareActive || els.compareActive.hidden || busy || drag) return;
+  if (event.button != null && event.button !== 0) return;
+  if (event.target.closest("button, a, input, textarea, select, label")) return;
+
+  const itemEl = event.target.closest(".handful-item");
+  const item =
+    itemEl instanceof HTMLElement && els.handfulList?.contains(itemEl)
+      ? itemEl
+      : null;
+
+  /* Desktop: buttons for Skip/Undo; list drag stays immediate. */
+  if (isDesktopLayout()) {
+    if (item) startHandfulDrag(event, item);
+    return;
+  }
+
+  pointerGesture = {
+    mode: "pending",
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    item,
+  };
+
+  document.addEventListener("pointermove", onGesturePointerMove);
+  document.addEventListener("pointerup", onGesturePointerUp);
+  document.addEventListener("pointercancel", onGesturePointerUp);
 });
 
 /**
