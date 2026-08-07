@@ -6,7 +6,7 @@
 
 import { extractBooksFromMatrix } from "./tabular.js";
 
-/** @typedef {{ title: string, author: string, timesRead: number }} BookRow */
+/** @typedef {{ title: string, author: string, timesRead: number, finishedAts: number[] }} BookRow */
 
 const SHEET_ID_RE =
   /(?:docs\.google\.com\/spreadsheets\/d\/|\/d\/)([a-zA-Z0-9-_]+)/;
@@ -163,7 +163,8 @@ function booksFromGvizTable(table) {
     /** @type {string[]} */
     const out = [];
     for (let i = 0; i < width; i++) {
-      out.push(cellToString(cells[i]));
+      const colType = (cols[i]?.type || "").toLowerCase();
+      out.push(cellToString(cells[i], colType));
     }
     return out;
   });
@@ -173,9 +174,18 @@ function booksFromGvizTable(table) {
 
 /**
  * @param {GvizCell | null | undefined} cell
+ * @param {string} [colType]
  */
-function cellToString(cell) {
+function cellToString(cell, colType = "") {
   if (!cell) return "";
+  // Prefer raw Date(y,m,d) for date columns — more reliable than locale `f`.
+  if (
+    (colType === "date" || colType === "datetime") &&
+    cell.v != null &&
+    String(cell.v).trim() !== ""
+  ) {
+    return String(cell.v).trim();
+  }
   if (cell.f != null && String(cell.f).trim() !== "") return String(cell.f).trim();
   if (cell.v == null) return "";
   return String(cell.v).trim();

@@ -2,10 +2,12 @@
  * Flexible tabular → book extraction without a rigid schema or LLM.
  * Finds title/author columns via header synonyms + content heuristics,
  * counts re-reads from duplicate rows (or an explicit read-count column),
- * then discards dates, lengths, tags, and other stats.
+ * and keeps finish/read dates for monthly reading stats.
  */
 
-/** @typedef {{ title: string, author: string, timesRead: number }} BookRow */
+/**
+ * @typedef {{ title: string, author: string, timesRead: number, finishedAts: number[] }} BookRow
+ */
 
 const TITLE_HEADER =
   /^(title|book|book\s*title|book\s*name|name|work|novel|story|album|item)$/i;
@@ -14,6 +16,9 @@ const AUTHOR_HEADER =
 /** Explicit per-book read counts — not yearly running totals like "Annual Count". */
 const TIMES_READ_HEADER =
   /^(times?\s*read|read\s*count|#\s*reads?|number\s*of\s*reads?|reads)$/i;
+/** Finish / date-read columns from reading logs (Goodreads, Sheets, etc.). */
+const DATE_HEADER =
+  /^(date(\s*(read|finished|finished\s*on|completed|completed\s*on))?|finished(\s*(on|date|at))?|read\s*date|date\s*read|completed(\s*(on|date))?|when\s*read|finish\s*date)$/i;
 
 const DATE_RE =
   /^(?:\d{1,4}[\/\-.\s]\d{1,2}[\/\-.\s]\d{1,4}|\d{4}-\d{2}-\d{2}|Date\(\d)/i;
@@ -129,6 +134,8 @@ export function extractBooksFromMatrix(matrix, opts = {}) {
         ? parseTimesRead(row[mapping.timesReadCol])
         : null;
     const increment = fromColumn ?? 1;
+    const finishedAt =
+      mapping.dateCol >= 0 ? parseFinishedAt(row[mapping.dateCol]) : null;
 
     const key = `${title.toLowerCase()}|${author.toLowerCase()}`;
     const existing = byKey.get(key);
@@ -138,24 +145,37 @@ export function extractBooksFromMatrix(matrix, opts = {}) {
       } else {
         existing.timesRead += 1;
       }
+      if (finishedAt != null) {
+        existing.finishedAts.push(finishedAt);
+      }
     } else {
-      byKey.set(key, { title, author, timesRead: Math.max(1, increment) });
+      byKey.set(key, {
+        title,
+        author,
+        timesRead: Math.max(1, increment),
+        finishedAts: finishedAt != null ? [finishedAt] : [],
+      });
     }
   }
 
-  return Array.from(byKey.values());
+  return Array.from(byKey.values()).map((book) => ({
+    ...book,
+    timesRead: Math.max(book.timesRead, book.finishedAts.length || 1),
+    finishedAts: dedupeFinishedAts(book.finishedAts),
+  }));
 }
 
 /**
  * @param {(string | null)[]} headers
  * @param {string[][]} dataRows
  * @param {number} width
- * @returns {{ titleCol: number, authorCol: number, timesReadCol: number }}
+ * @returns {{ titleCol: number, authorCol: number, timesReadCol: number, dateCol: number }}
  */
 function resolveColumns(headers, dataRows, width) {
   let titleCol = -1;
   let authorCol = -1;
   let timesReadCol = -1;
+  let dateCol = -1;
 
   for (let i = 0; i < width; i++) {
     const h = headers[i];
@@ -163,10 +183,11 @@ function resolveColumns(headers, dataRows, width) {
     if (titleCol < 0 && TITLE_HEADER.test(h)) titleCol = i;
     if (authorCol < 0 && AUTHOR_HEADER.test(h)) authorCol = i;
     if (timesReadCol < 0 && TIMES_READ_HEADER.test(h)) timesReadCol = i;
+    if (dateCol < 0 && DATE_HEADER.test(h)) dateCol = i;
   }
 
   // Softer header contains-match if exact synonyms missed
-  if (titleCol < 0 || authorCol < 0) {
+  if (titleCol < 0 || authorCol < 0 || dateCol < 0) {
     for (let i = 0; i < width; i++) {
       const h = (headers[i] || "").toLowerCase();
       if (!h) continue;
@@ -176,11 +197,26 @@ function resolveColumns(headers, dataRows, width) {
       if (authorCol < 0 && /\bauthor\b|\bwriter\b|\bby\b/.test(h)) {
         authorCol = i;
       }
+      if (
+        dateCol < 0 &&
+        /\bdate\b/.test(h) &&
+        !/birth|publish|start|added|bought/.test(h)
+      ) {
+        dateCol = i;
+      }
     }
   }
 
+  if (dateCol < 0) {
+    dateCol = detectDateColumn(dataRows, width, [
+      titleCol,
+      authorCol,
+      timesReadCol,
+    ]);
+  }
+
   if (titleCol >= 0 && authorCol >= 0 && titleCol !== authorCol) {
-    return { titleCol, authorCol, timesReadCol };
+    return { titleCol, authorCol, timesReadCol, dateCol };
   }
 
   const scores = scoreColumns(dataRows, width);
@@ -202,7 +238,15 @@ function resolveColumns(headers, dataRows, width) {
 
   if (titleCol === authorCol) authorCol = -1;
 
-  return { titleCol, authorCol, timesReadCol };
+  if (dateCol < 0) {
+    dateCol = detectDateColumn(dataRows, width, [
+      titleCol,
+      authorCol,
+      timesReadCol,
+    ]);
+  }
+
+  return { titleCol, authorCol, timesReadCol, dateCol };
 }
 
 /**
@@ -215,6 +259,152 @@ function parseTimesRead(raw) {
   const n = Number.parseInt(text, 10);
   if (!Number.isFinite(n) || n < 1) return null;
   return n;
+}
+
+/**
+ * Parse a finish/read date cell into a unix timestamp (ms).
+ * Accepts ISO, locale dates, and Google Sheets `Date(y,m,d)` values.
+ *
+ * @param {string | undefined} raw
+ * @returns {number | null}
+ */
+export function parseFinishedAt(raw) {
+  const text = (raw || "").trim();
+  if (!text) return null;
+
+  const gviz = text.match(
+    /^Date\((\d{4}),\s*(\d{1,2}),\s*(\d{1,2})(?:,\s*\d{1,2},\s*\d{1,2},\s*\d{1,2})?\)$/i
+  );
+  if (gviz) {
+    const year = Number(gviz[1]);
+    const monthIndex = Number(gviz[2]);
+    const day = Number(gviz[3]);
+    const dt = new Date(year, monthIndex, day);
+    if (
+      dt.getFullYear() === year &&
+      dt.getMonth() === monthIndex &&
+      dt.getDate() === day
+    ) {
+      return dt.getTime();
+    }
+    return null;
+  }
+
+  // Bare years / short numbers are not finish dates.
+  if (/^\d{1,4}$/.test(text) || /^\d{5,}$/.test(text)) return null;
+
+  const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+  if (iso) {
+    const year = Number(iso[1]);
+    const month = Number(iso[2]);
+    const day = Number(iso[3]);
+    const dt = new Date(year, month - 1, day);
+    if (
+      dt.getFullYear() === year &&
+      dt.getMonth() === month - 1 &&
+      dt.getDate() === day
+    ) {
+      return dt.getTime();
+    }
+    return null;
+  }
+
+  const slash = text.match(/^(\d{1,4})[\/\-.\s](\d{1,2})[\/\-.\s](\d{1,4})$/);
+  if (slash) {
+    let a = Number(slash[1]);
+    let b = Number(slash[2]);
+    let c = Number(slash[3]);
+    /** @type {number} */
+    let year;
+    /** @type {number} */
+    let month;
+    /** @type {number} */
+    let day;
+    if (String(slash[1]).length === 4) {
+      year = a;
+      month = b;
+      day = c;
+    } else if (String(slash[3]).length === 4) {
+      year = c;
+      // Prefer MDY when first part > 12 would be invalid as month — else MDY (US reading logs).
+      if (a > 12) {
+        day = a;
+        month = b;
+      } else {
+        month = a;
+        day = b;
+      }
+    } else {
+      return null;
+    }
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const dt = new Date(year, month - 1, day);
+    if (
+      dt.getFullYear() === year &&
+      dt.getMonth() === month - 1 &&
+      dt.getDate() === day
+    ) {
+      return dt.getTime();
+    }
+    return null;
+  }
+
+  const parsed = Date.parse(text);
+  if (!Number.isFinite(parsed)) return null;
+  const dt = new Date(parsed);
+  const year = dt.getFullYear();
+  if (year < 1900 || year > 2100) return null;
+  return dt.getTime();
+}
+
+/**
+ * @param {number[]} timestamps
+ * @returns {number[]}
+ */
+function dedupeFinishedAts(timestamps) {
+  /** @type {Map<string, number>} */
+  const byDay = new Map();
+  for (const ts of timestamps) {
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if (!byDay.has(key)) byDay.set(key, ts);
+  }
+  return [...byDay.values()].sort((a, b) => a - b);
+}
+
+/**
+ * @param {string[][]} dataRows
+ * @param {number} width
+ * @param {number[]} exclude
+ * @returns {number}
+ */
+function detectDateColumn(dataRows, width, exclude) {
+  const sample = dataRows.slice(0, Math.min(40, dataRows.length));
+  if (sample.length === 0) return -1;
+
+  let best = -1;
+  let bestRatio = 0;
+  const excluded = new Set(exclude.filter((i) => i >= 0));
+
+  for (let c = 0; c < width; c++) {
+    if (excluded.has(c)) continue;
+    let hits = 0;
+    let usable = 0;
+    for (const row of sample) {
+      const raw = (row[c] || "").trim();
+      if (!raw) continue;
+      usable++;
+      if (parseFinishedAt(raw) != null) hits++;
+    }
+    if (usable < 2) continue;
+    const ratio = hits / usable;
+    if (ratio >= 0.6 && ratio > bestRatio) {
+      bestRatio = ratio;
+      best = c;
+    }
+  }
+  return best;
 }
 
 /**
@@ -323,7 +513,14 @@ function rowLooksLikeHeader(row) {
   if (cells.length === 0) return false;
   let hits = 0;
   for (const c of cells) {
-    if (TITLE_HEADER.test(c) || AUTHOR_HEADER.test(c) || TIMES_READ_HEADER.test(c)) hits++;
+    if (
+      TITLE_HEADER.test(c) ||
+      AUTHOR_HEADER.test(c) ||
+      TIMES_READ_HEADER.test(c) ||
+      DATE_HEADER.test(c)
+    ) {
+      hits++;
+    }
     if (/^(date|length|count|pages|rating|genre|status|notes?|isbn|year)/i.test(c)) {
       hits++;
     }

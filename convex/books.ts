@@ -18,8 +18,30 @@ const bookValidator = v.object({
   rating: v.number(),
   comparisons: v.number(),
   timesRead: v.number(),
+  finishedAts: v.optional(v.array(v.number())),
   createdAt: v.number(),
 });
+
+/**
+ * Merge finish timestamps, keeping one entry per calendar day.
+ */
+function mergeFinishedAts(
+  existing: number[] | undefined,
+  incoming: number[] | undefined
+): number[] | undefined {
+  const all = [...(existing ?? []), ...(incoming ?? [])];
+  if (all.length === 0) return existing;
+  const byDay = new Map<string, number>();
+  for (const ts of all) {
+    if (!Number.isFinite(ts)) continue;
+    const d = new Date(ts);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    if (!byDay.has(key)) byDay.set(key, ts);
+  }
+  const merged = [...byDay.values()].sort((a, b) => a - b);
+  return merged.length > 0 ? merged : existing;
+}
 
 export const list = query({
   args: {},
@@ -63,6 +85,7 @@ export const add = mutation({
       throw new Error("That book is already in your library");
     }
 
+    const now = Date.now();
     const id = await ctx.db.insert("books", {
       libraryId: library._id,
       title,
@@ -70,7 +93,8 @@ export const add = mutation({
       rating: INITIAL_RATING,
       comparisons: 0,
       timesRead: 1,
-      createdAt: Date.now(),
+      finishedAts: [now],
+      createdAt: now,
     });
     const book = await ctx.db.get(id);
     if (!book) throw new Error("Failed to add book");
@@ -85,6 +109,7 @@ export const importMany = mutation({
         title: v.string(),
         author: v.string(),
         timesRead: v.optional(v.number()),
+        finishedAts: v.optional(v.array(v.number())),
       })
     ),
   },
@@ -109,16 +134,42 @@ export const importMany = mutation({
       const author = row.author.trim();
       if (!title || !author) continue;
       const key = `${title.toLowerCase()}|${author.toLowerCase()}`;
-      const timesRead = Math.max(1, Math.floor(row.timesRead ?? 1));
+      const incomingFinished = (row.finishedAts ?? []).filter((ts) =>
+        Number.isFinite(ts)
+      );
+      const timesRead = Math.max(
+        1,
+        Math.floor(row.timesRead ?? 1),
+        incomingFinished.length
+      );
       const current = byKey.get(key);
       if (current) {
-        if (timesRead > current.timesRead) {
-          await ctx.db.patch(current._id, { timesRead });
-          current.timesRead = timesRead;
+        const finishedAts = mergeFinishedAts(
+          current.finishedAts,
+          incomingFinished
+        );
+        const nextTimesRead = Math.max(
+          current.timesRead,
+          timesRead,
+          finishedAts?.length ?? 0
+        );
+        const timesChanged = nextTimesRead > current.timesRead;
+        const datesChanged =
+          (finishedAts?.length ?? 0) !== (current.finishedAts?.length ?? 0);
+        if (timesChanged || datesChanged) {
+          await ctx.db.patch(current._id, {
+            timesRead: nextTimesRead,
+            ...(finishedAts ? { finishedAts } : {}),
+          });
+          current.timesRead = nextTimesRead;
+          current.finishedAts = finishedAts;
           updated++;
         }
         continue;
       }
+      const now = Date.now();
+      const finishedAts =
+        mergeFinishedAts(undefined, incomingFinished) ?? undefined;
       const id = await ctx.db.insert("books", {
         libraryId: library._id,
         title,
@@ -126,7 +177,8 @@ export const importMany = mutation({
         rating: INITIAL_RATING,
         comparisons: 0,
         timesRead,
-        createdAt: Date.now(),
+        ...(finishedAts ? { finishedAts } : {}),
+        createdAt: now,
       });
       byKey.set(key, {
         _id: id,
@@ -137,7 +189,8 @@ export const importMany = mutation({
         rating: INITIAL_RATING,
         comparisons: 0,
         timesRead,
-        createdAt: Date.now(),
+        finishedAts,
+        createdAt: now,
       });
       added++;
     }

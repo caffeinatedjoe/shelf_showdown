@@ -22,6 +22,8 @@ export default defineSchema({
     rating: v.number(),
     comparisons: v.number(),
     timesRead: v.number(),
+    // Finish timestamps (ms) from reading-log imports; used for monthly read stats.
+    finishedAts: v.optional(v.array(v.number())),
     createdAt: v.number(),
   })
     .index("by_library", ["libraryId"])
