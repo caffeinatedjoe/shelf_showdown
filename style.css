@@ -238,6 +238,26 @@ body {
   min-height: 0;
   gap: 0.45rem;
   overflow: hidden;
+  position: relative;
+  touch-action: pan-y;
+}
+
+#compare-active.is-swiping-left,
+#compare-active.is-swiping-right {
+  cursor: grabbing;
+}
+
+#compare-active.is-swiping-left .handful-list,
+#compare-active.is-swiping-right .handful-list {
+  transition: transform 0.18s ease;
+}
+
+#compare-active.is-swiping-left .handful-list {
+  transform: translateX(-0.45rem);
+}
+
+#compare-active.is-swiping-right .handful-list {
+  transform: translateX(0.45rem);
 }
 
 .view-header {
@@ -635,6 +655,14 @@ body {
   font-size: 0.82rem;
 }
 
+.prompt-desktop {
+  display: none;
+}
+
+.prompt-touch {
+  display: inline;
+}
+
 .handful-list {
   list-style: none;
   margin: 0;
@@ -789,6 +817,7 @@ body {
 }
 
 .handful-actions {
+  display: none;
   margin-top: 0.1rem;
   flex-wrap: nowrap;
 }
@@ -798,6 +827,74 @@ body {
   padding: 0.45rem 0.9rem;
   font-size: 0.78rem;
   flex: 1;
+}
+
+/* Swipe feedback — Skip / Undo on narrow viewports */
+.swipe-edge-hint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.swipe-edge-hint-left,
+.swipe-edge-hint-right {
+  position: absolute;
+  top: 42%;
+  transform: translateY(-50%);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.swipe-edge-hint-left {
+  left: 0.55rem;
+  color: var(--teal-deep);
+}
+
+.swipe-edge-hint-right {
+  right: 0.55rem;
+  color: var(--ink-muted);
+}
+
+#compare-active.is-swiping-left .swipe-edge-hint-left,
+#compare-active.is-swiping-right .swipe-edge-hint-right {
+  opacity: 0.85;
+}
+
+.swipe-toast {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%) scale(0.92);
+  z-index: 6;
+  padding: 0.55rem 1rem;
+  border-radius: 999px;
+  background: rgba(26, 42, 58, 0.88);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.swipe-toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.swipe-toast.is-undo {
+  background: rgba(74, 147, 164, 0.94);
+}
+
+.swipe-toast.is-skip {
+  background: rgba(26, 42, 58, 0.88);
 }
 
 #compare-progress:empty {
@@ -1090,6 +1187,24 @@ body {
 
   .handful-cover {
     width: clamp(2.1rem, 7vh, 2.85rem);
+  }
+
+  /* Desktop keeps Skip / Undo buttons; swipe is for the app */
+  .handful-actions {
+    display: flex;
+  }
+
+  .prompt-touch {
+    display: none;
+  }
+
+  .prompt-desktop {
+    display: inline;
+  }
+
+  .swipe-edge-hint,
+  .swipe-toast {
+    display: none;
   }
 }
 

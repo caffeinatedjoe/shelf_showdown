@@ -77,10 +77,13 @@
             </div>
           </div>
 
-          <div id="compare-active">
+          <div id="compare-active" data-swipe-screen>
             <p class="handful-prompt" id="handful-prompt">
               <span class="handful-prompt-title">Best on top</span>
-              <span class="handful-prompt-sub" id="handful-prompt-sub">Drag to rearrange, then lock in your ranks.</span>
+              <span class="handful-prompt-sub" id="handful-prompt-sub">
+                <span class="prompt-touch">Drag to rearrange. Swipe right to skip, left to undo.</span>
+                <span class="prompt-desktop">Drag to rearrange, then lock in your ranks.</span>
+              </span>
             </p>
             <ol class="handful-list" id="handful-list" aria-label="Drag to rank these books"></ol>
             <div class="handful-footer">
@@ -93,6 +96,11 @@
                 <button type="button" id="undo-btn" class="btn btn-flat">Undo</button>
               </div>
             </div>
+            <div class="swipe-edge-hint" aria-hidden="true">
+              <span class="swipe-edge-hint-left">Undo</span>
+              <span class="swipe-edge-hint-right">Skip</span>
+            </div>
+            <div class="swipe-toast" id="swipe-toast" aria-live="polite" hidden></div>
             <p id="compare-progress" class="status" aria-live="polite"></p>
           </div>
         </section>
