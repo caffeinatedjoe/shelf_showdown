@@ -8,7 +8,7 @@
     "dev": "npx convex dev --start 'npx serve .'",
     "serve": "npx serve .",
     "convex:dev": "npx convex dev",
-    "test": "SHELF_SHOWDOWN_TEST=1 node --test modules/comparisons.test.js modules/handful.test.js",
+    "test": "SHELF_SHOWDOWN_TEST=1 node --test modules/comparisons.test.js modules/handful.test.js modules/tabular.test.js",
     "lint": "echo \"no lint configured\""
   },
   "dependencies": {

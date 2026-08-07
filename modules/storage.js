@@ -3,7 +3,7 @@ import { convexMutation, convexQuery } from "./convexClient.js";
 export const INITIAL_RATING = 1500;
 
 /**
- * @typedef {{ id: string, title: string, author: string, rating: number, comparisons: number, timesRead: number, createdAt: number }} Book
+ * @typedef {{ id: string, title: string, author: string, rating: number, comparisons: number, timesRead: number, finishedAts: number[], createdAt: number }} Book
  * @typedef {{ id: string, bookAId: string, bookBId: string, winnerId: string, ratingA: number, ratingB: number, timestamp: number }} Comparison
  * @typedef {{ books: Book[], comparisons: Comparison[] }} AppState
  */
@@ -14,7 +14,7 @@ export function createEmptyState() {
 }
 
 /**
- * @param {{ _id: string, title: string, author: string, rating: number, comparisons: number, timesRead?: number, createdAt: number }} book
+ * @param {{ _id: string, title: string, author: string, rating: number, comparisons: number, timesRead?: number, finishedAts?: number[], createdAt: number }} book
  * @returns {Book}
  */
 function mapBook(book) {
@@ -25,6 +25,7 @@ function mapBook(book) {
     rating: book.rating,
     comparisons: book.comparisons,
     timesRead: book.timesRead ?? 1,
+    finishedAts: Array.isArray(book.finishedAts) ? book.finishedAts : [],
     createdAt: book.createdAt,
   };
 }
@@ -81,12 +82,20 @@ export async function removeBookRemote(bookId) {
 }
 
 /**
- * @param {{ title: string, author: string, timesRead?: number }[]} rows
+ * @param {{ title: string, author: string, timesRead?: number, finishedAts?: number[] }[]} rows
  * @returns {Promise<{ added: number, updated: number }>}
  */
 export async function importBooksRemote(rows) {
+  const books = rows.map((row) => ({
+    title: row.title,
+    author: row.author,
+    timesRead: row.timesRead,
+    ...(row.finishedAts && row.finishedAts.length > 0
+      ? { finishedAts: row.finishedAts }
+      : {}),
+  }));
   const result = await convexMutation("books:importMany", {
-    books: rows,
+    books,
   });
   return {
     added: result?.added ?? 0,

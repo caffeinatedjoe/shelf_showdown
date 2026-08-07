@@ -514,10 +514,16 @@ function renderMonthlyChart() {
   /** @type {Map<string, number>} */
   const byMonth = new Map();
   for (const book of state.books) {
-    const d = new Date(book.createdAt);
-    if (Number.isNaN(d.getTime())) continue;
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
+    const finishedAts =
+      Array.isArray(book.finishedAts) && book.finishedAts.length > 0
+        ? book.finishedAts
+        : [book.createdAt];
+    for (const ts of finishedAts) {
+      const d = new Date(ts);
+      if (Number.isNaN(d.getTime())) continue;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
+    }
   }
 
   const keys = [...byMonth.keys()].sort();
@@ -544,7 +550,7 @@ function renderMonthlyChart() {
     const bar = document.createElement("div");
     bar.className = "monthly-bar-fill";
     bar.style.height = `${Math.max(8, Math.round((count / max) * 100))}%`;
-    bar.title = `${count} book${count === 1 ? "" : "s"}`;
+    bar.title = `${count} book${count === 1 ? "" : "s"} read`;
 
     const countEl = document.createElement("span");
     countEl.className = "monthly-count";

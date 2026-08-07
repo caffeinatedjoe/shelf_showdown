@@ -42,7 +42,8 @@ The importer does not require a fixed column layout. It:
 2. Detects title and author columns from header names when present (`Title`, `Author`, `Book`, `Writer`, …)
 3. Falls back to content heuristics when headers are missing or unlabeled (preferring longer book-like text for title, name-shaped text for author)
 4. Counts **times read** from duplicate title/author rows (reading-log style), or from an explicit `Times Read` / `Read Count` column when present
-5. Discards everything else — dates, lengths, yearly totals, genre flags, other stats
+5. Keeps **finish dates** from columns like `Date Read`, `Date Finished`, or `Date` (used for Stats → books read by month)
+6. Discards everything else — lengths, yearly totals, genre flags, other stats
 
 Example:
 
@@ -60,6 +61,15 @@ CSV import uses the same flexible column detection. A simple file still works:
 Title,Author
 The Left Hand of Darkness,Ursula K. Le Guin
 Neuromancer,William Gibson
+```
+
+Reading-log style with dates (powers the monthly stats chart):
+
+```csv
+Title,Author,Date Read
+The Left Hand of Darkness,Ursula K. Le Guin,2024-01-15
+Neuromancer,William Gibson,2024-03-02
+The Left Hand of Darkness,Ursula K. Le Guin,2025-06-10
 ```
 
 Header row optional. Without headers, the first text-heavy column is treated as title and the next name-like column as author.
