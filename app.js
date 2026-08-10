@@ -96,8 +96,11 @@ const els = {
   authForm: /** @type {HTMLFormElement} */ (document.getElementById("auth-form")),
   authEmail: /** @type {HTMLInputElement} */ (document.getElementById("auth-email")),
   authPassword: /** @type {HTMLInputElement} */ (document.getElementById("auth-password")),
-  authSignInBtn: /** @type {HTMLButtonElement} */ (document.getElementById("auth-sign-in-btn")),
-  authSignUpBtn: /** @type {HTMLButtonElement} */ (document.getElementById("auth-sign-up-btn")),
+  authTitle: document.getElementById("auth-title"),
+  authLede: document.getElementById("auth-lede"),
+  authSubmitBtn: /** @type {HTMLButtonElement} */ (document.getElementById("auth-submit-btn")),
+  authSwitchPrompt: document.getElementById("auth-switch-prompt"),
+  authSwitchBtn: /** @type {HTMLButtonElement} */ (document.getElementById("auth-switch-btn")),
   authStatus: document.getElementById("auth-status"),
   addForm: document.getElementById("add-book-form"),
   titleInput: /** @type {HTMLInputElement} */ (document.getElementById("book-title")),
@@ -1324,9 +1327,32 @@ function showSignedOut() {
   els.appShell.hidden = true;
   els.accountBar.hidden = true;
   els.accountEmail.textContent = "";
+  setAuthMode("signIn");
   state = { books: [], comparisons: [] };
   sortSession = null;
   clearHandfulSession();
+}
+
+/**
+ * @param {"signIn" | "signUp"} mode
+ */
+function setAuthMode(mode) {
+  const isSignUp = mode === "signUp";
+  els.authPanel.dataset.authMode = mode;
+  els.authTitle.textContent = isSignUp ? "Create account" : "Sign in";
+  els.authLede.textContent = isSignUp
+    ? "You’ll need an account to save your library and rankings across devices."
+    : "Welcome back. Sign in to pick up your library and rankings.";
+  els.authSubmitBtn.textContent = isSignUp ? "Create account" : "Sign in";
+  els.authSwitchPrompt.textContent = isSignUp
+    ? "Already have an account?"
+    : "New here?";
+  els.authSwitchBtn.textContent = isSignUp ? "Sign in" : "Create account";
+  els.authPassword.autocomplete = isSignUp ? "new-password" : "current-password";
+  els.authPassword.placeholder = isSignUp
+    ? "At least 8 characters"
+    : "Your password";
+  els.authStatus.textContent = "";
 }
 
 /**
@@ -1337,8 +1363,8 @@ async function handleAuth(flow) {
   const password = els.authPassword.value;
   els.authStatus.textContent =
     flow === "signUp" ? "Creating account…" : "Signing in…";
-  els.authSignInBtn.disabled = true;
-  els.authSignUpBtn.disabled = true;
+  els.authSubmitBtn.disabled = true;
+  els.authSwitchBtn.disabled = true;
   try {
     const user = await passwordAuth(flow, email, password);
     showSignedIn(user);
@@ -1347,22 +1373,27 @@ async function handleAuth(flow) {
     enterApp();
     els.authStatus.textContent = "";
     els.authForm.reset();
+    setAuthMode("signIn");
   } catch (err) {
     els.authStatus.textContent =
       err instanceof Error ? err.message : "Authentication failed.";
   } finally {
-    els.authSignInBtn.disabled = false;
-    els.authSignUpBtn.disabled = false;
+    els.authSubmitBtn.disabled = false;
+    els.authSwitchBtn.disabled = false;
   }
 }
 
 els.authForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  void handleAuth("signUp");
+  const mode =
+    els.authPanel.dataset.authMode === "signUp" ? "signUp" : "signIn";
+  void handleAuth(mode);
 });
 
-els.authSignInBtn.addEventListener("click", () => {
-  void handleAuth("signIn");
+els.authSwitchBtn.addEventListener("click", () => {
+  const nextMode =
+    els.authPanel.dataset.authMode === "signUp" ? "signIn" : "signUp";
+  setAuthMode(nextMode);
 });
 
 els.signOutBtn.addEventListener("click", () => {

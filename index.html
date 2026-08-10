@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20260810d" />
+  <link rel="stylesheet" href="style.css?v=20260810e" />
 </head>
 <body>
   <div id="app">
@@ -30,9 +30,9 @@
       </div>
     </header>
 
-    <section id="auth-panel" class="auth-panel panel-card" aria-label="Account">
-      <h2 class="view-title">Create your account</h2>
-      <p class="view-lede">You’ll need an account to save your library and rankings across devices.</p>
+    <section id="auth-panel" class="auth-panel panel-card" aria-label="Account" data-auth-mode="signIn">
+      <h2 class="view-title" id="auth-title">Sign in</h2>
+      <p class="view-lede" id="auth-lede">Welcome back. Sign in to pick up your library and rankings.</p>
       <form id="auth-form" class="auth-form">
         <label class="field">
           <span>Email</span>
@@ -40,14 +40,17 @@
         </label>
         <label class="field">
           <span>Password</span>
-          <input type="password" id="auth-password" name="password" required minlength="8" autocomplete="new-password" placeholder="At least 8 characters" />
+          <input type="password" id="auth-password" name="password" required minlength="8" autocomplete="current-password" placeholder="Your password" />
         </label>
         <div class="auth-actions">
-          <button type="submit" class="btn btn-raised" id="auth-sign-up-btn" data-flow="signUp">Create account</button>
-          <button type="button" class="btn btn-flat" id="auth-sign-in-btn" data-flow="signIn">Sign in</button>
+          <button type="submit" class="btn btn-raised" id="auth-submit-btn">Sign in</button>
         </div>
       </form>
       <p id="auth-status" class="status" aria-live="polite"></p>
+      <p class="auth-switch">
+        <span id="auth-switch-prompt">New here?</span>
+        <button type="button" class="auth-switch-link" id="auth-switch-btn">Create account</button>
+      </p>
     </section>
 
     <div id="app-shell" class="app-shell" hidden>
