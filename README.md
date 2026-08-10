@@ -12,6 +12,14 @@ Rank your books in handfuls of five: drag to set best → worst, submit, and mer
 
 Data is stored in [Convex](https://convex.dev) with email/password auth via Convex Auth. Sign up once; your library and rankings persist to your account across devices.
 
+After pulling backend changes (schema / Convex functions), redeploy production with:
+
+```bash
+npx convex deploy
+```
+
+GitHub Pages only serves the static frontend — Convex does not update automatically.
+
 ## Live site
 
 Hosted on GitHub Pages: [joecoffey.me/shelf_showdown](https://joecoffey.me/shelf_showdown/)

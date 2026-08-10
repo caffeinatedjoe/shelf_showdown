@@ -77,7 +77,7 @@ export function parseCsv(text) {
 
 /**
  * @param {string[][]} matrix raw rows (may include a header row)
- * @param {{ headers?: (string | null)[] }} [opts] optional pre-known headers (e.g. from gviz)
+ * @param {{ headers?: (string | null)[], columnTypes?: (string | null)[] }} [opts]
  * @returns {BookRow[]}
  */
 export function extractBooksFromMatrix(matrix, opts = {}) {
@@ -85,7 +85,8 @@ export function extractBooksFromMatrix(matrix, opts = {}) {
 
   const width = Math.max(
     ...matrix.map((r) => r.length),
-    opts.headers?.length ?? 0
+    opts.headers?.length ?? 0,
+    opts.columnTypes?.length ?? 0
   );
   if (width === 0) return [];
 
@@ -93,6 +94,13 @@ export function extractBooksFromMatrix(matrix, opts = {}) {
   const provided = (opts.headers ?? []).map((h) =>
     h == null ? null : String(h).trim()
   );
+  /** @type {(string | null)[]} */
+  const columnTypes = Array.from({ length: width }, (_, i) => {
+    const t = opts.columnTypes?.[i];
+    return t == null || String(t).trim() === ""
+      ? null
+      : String(t).trim().toLowerCase();
+  });
 
   const first = padRow(matrix[0], width);
   const firstLooksLikeHeader =
@@ -115,7 +123,7 @@ export function extractBooksFromMatrix(matrix, opts = {}) {
     .map((r) => padRow(r, width))
     .filter((r) => r.some((c) => c.trim()));
 
-  const mapping = resolveColumns(headers, dataRows, width);
+  const mapping = resolveColumns(headers, dataRows, width, columnTypes);
   if (mapping.titleCol < 0) return [];
 
   /** @type {Map<string, BookRow>} */
@@ -169,13 +177,33 @@ export function extractBooksFromMatrix(matrix, opts = {}) {
  * @param {(string | null)[]} headers
  * @param {string[][]} dataRows
  * @param {number} width
+ * @param {(string | null)[]} [columnTypes]
  * @returns {{ titleCol: number, authorCol: number, timesReadCol: number, dateCol: number }}
  */
-function resolveColumns(headers, dataRows, width) {
+function resolveColumns(headers, dataRows, width, columnTypes = []) {
   let titleCol = -1;
   let authorCol = -1;
   let timesReadCol = -1;
   let dateCol = -1;
+
+  // Prefer typed date columns from Google Sheets gviz (headers are often blank).
+  for (let i = 0; i < width; i++) {
+    const t = columnTypes[i];
+    if (dateCol < 0 && (t === "date" || t === "datetime")) {
+      // Skip duration-like datetime columns (Google epoch clock times).
+      const sample = dataRows.slice(0, 20).map((r) => (r[i] || "").trim());
+      const finishLike = sample.filter((c) => {
+        if (!c) return false;
+        const ts = parseFinishedAt(c);
+        if (ts == null) return false;
+        const y = new Date(ts).getFullYear();
+        return y >= 1900 && y <= 2100;
+      }).length;
+      if (finishLike >= Math.max(2, Math.floor(sample.filter(Boolean).length * 0.5))) {
+        dateCol = i;
+      }
+    }
+  }
 
   for (let i = 0; i < width; i++) {
     const h = headers[i];
@@ -279,6 +307,7 @@ export function parseFinishedAt(raw) {
     const year = Number(gviz[1]);
     const monthIndex = Number(gviz[2]);
     const day = Number(gviz[3]);
+    if (year < 1900 || year > 2100) return null;
     const dt = new Date(year, monthIndex, day);
     if (
       dt.getFullYear() === year &&

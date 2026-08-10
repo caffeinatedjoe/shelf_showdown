@@ -149,6 +149,11 @@ function booksFromGvizTable(table) {
       ? String(col.label).trim()
       : null
   );
+  const columnTypes = cols.map((col) =>
+    col.type != null && String(col.type).trim() !== ""
+      ? String(col.type).trim()
+      : null
+  );
 
   const width = Math.max(
     headers.length,
@@ -157,6 +162,7 @@ function booksFromGvizTable(table) {
   );
 
   while (headers.length < width) headers.push(null);
+  while (columnTypes.length < width) columnTypes.push(null);
 
   const matrix = (table.rows || []).map((row) => {
     const cells = row.c || [];
@@ -169,7 +175,7 @@ function booksFromGvizTable(table) {
     return out;
   });
 
-  return extractBooksFromMatrix(matrix, { headers });
+  return extractBooksFromMatrix(matrix, { headers, columnTypes });
 }
 
 /**

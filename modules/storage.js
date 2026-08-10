@@ -2,6 +2,8 @@ import { convexMutation, convexQuery } from "./convexClient.js";
 
 export const INITIAL_RATING = 1500;
 
+const FINISHED_ATS_CACHE_KEY = "shelf.showdown.finishedAts";
+
 /**
  * @typedef {{ id: string, title: string, author: string, rating: number, comparisons: number, timesRead: number, finishedAts: number[], createdAt: number }} Book
  * @typedef {{ id: string, bookAId: string, bookBId: string, winnerId: string, ratingA: number, ratingB: number, timestamp: number }} Comparison
@@ -14,10 +16,79 @@ export function createEmptyState() {
 }
 
 /**
+ * @param {string} title
+ * @param {string} author
+ */
+function bookKey(title, author) {
+  return `${title.trim().toLowerCase()}|${author.trim().toLowerCase()}`;
+}
+
+/** @returns {Record<string, number[]>} */
+function readFinishedAtsCache() {
+  try {
+    const raw = localStorage.getItem(FINISHED_ATS_CACHE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    /** @type {Record<string, number[]>} */
+    const out = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!Array.isArray(value)) continue;
+      const nums = value.filter((n) => typeof n === "number" && Number.isFinite(n));
+      if (nums.length > 0) out[key] = nums;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** @param {Record<string, number[]>} cache */
+function writeFinishedAtsCache(cache) {
+  try {
+    localStorage.setItem(FINISHED_ATS_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+/**
+ * Persist finish dates locally (used when Convex prod hasn't been redeployed yet).
+ * @param {{ title: string, author: string, finishedAts?: number[] }[]} rows
+ */
+export function cacheFinishedAtsLocally(rows) {
+  const cache = readFinishedAtsCache();
+  let changed = false;
+  for (const row of rows) {
+    if (!row.finishedAts || row.finishedAts.length === 0) continue;
+    const key = bookKey(row.title, row.author);
+    const merged = [
+      ...new Set([...(cache[key] ?? []), ...row.finishedAts].filter(Number.isFinite)),
+    ].sort((a, b) => a - b);
+    if (
+      merged.length !== (cache[key]?.length ?? 0) ||
+      merged.some((ts, i) => ts !== cache[key]?.[i])
+    ) {
+      cache[key] = merged;
+      changed = true;
+    }
+  }
+  if (changed) writeFinishedAtsCache(cache);
+}
+
+/**
  * @param {{ _id: string, title: string, author: string, rating: number, comparisons: number, timesRead?: number, finishedAts?: number[], createdAt: number }} book
+ * @param {Record<string, number[]>} [finishedAtsCache]
  * @returns {Book}
  */
-function mapBook(book) {
+function mapBook(book, finishedAtsCache) {
+  const fromServer = Array.isArray(book.finishedAts) ? book.finishedAts : [];
+  const fromCache =
+    fromServer.length > 0
+      ? []
+      : (finishedAtsCache ?? readFinishedAtsCache())[
+          bookKey(book.title, book.author)
+        ] ?? [];
   return {
     id: book._id,
     title: book.title,
@@ -25,7 +96,7 @@ function mapBook(book) {
     rating: book.rating,
     comparisons: book.comparisons,
     timesRead: book.timesRead ?? 1,
-    finishedAts: Array.isArray(book.finishedAts) ? book.finishedAts : [],
+    finishedAts: fromServer.length > 0 ? fromServer : fromCache,
     createdAt: book.createdAt,
   };
 }
@@ -58,8 +129,9 @@ export async function loadState() {
     convexQuery("books:list", {}),
     convexQuery("comparisons:list", {}),
   ]);
+  const finishedAtsCache = readFinishedAtsCache();
   return {
-    books: (books ?? []).map(mapBook),
+    books: (books ?? []).map((book) => mapBook(book, finishedAtsCache)),
     comparisons: (comparisons ?? []).map(mapComparison),
   };
 }
@@ -71,7 +143,7 @@ export async function loadState() {
  */
 export async function addBookRemote(title, author) {
   const book = await convexMutation("books:add", { title, author });
-  return mapBook(book);
+  return mapBook(book, readFinishedAtsCache());
 }
 
 /**
@@ -83,10 +155,11 @@ export async function removeBookRemote(bookId) {
 
 /**
  * @param {{ title: string, author: string, timesRead?: number, finishedAts?: number[] }[]} rows
- * @returns {Promise<{ added: number, updated: number }>}
+ * @returns {Promise<{ added: number, updated: number, dated: number, datesStored: "convex" | "local" | "none" }>}
  */
 export async function importBooksRemote(rows) {
-  const books = rows.map((row) => ({
+  const dated = rows.filter((r) => (r.finishedAts?.length ?? 0) > 0).length;
+  const withDates = rows.map((row) => ({
     title: row.title,
     author: row.author,
     timesRead: row.timesRead,
@@ -94,13 +167,55 @@ export async function importBooksRemote(rows) {
       ? { finishedAts: row.finishedAts }
       : {}),
   }));
-  const result = await convexMutation("books:importMany", {
-    books,
-  });
-  return {
-    added: result?.added ?? 0,
-    updated: result?.updated ?? 0,
-  };
+  const withoutDates = rows.map((row) => ({
+    title: row.title,
+    author: row.author,
+    timesRead: row.timesRead,
+  }));
+
+  try {
+    const result = await convexMutation("books:importMany", {
+      books: withDates,
+    });
+    // Server accepted finish dates — drop local overrides for these titles.
+    if (dated > 0) {
+      const cache = readFinishedAtsCache();
+      let changed = false;
+      for (const row of rows) {
+        const key = bookKey(row.title, row.author);
+        if (cache[key]) {
+          delete cache[key];
+          changed = true;
+        }
+      }
+      if (changed) writeFinishedAtsCache(cache);
+    }
+    return {
+      added: result?.added ?? 0,
+      updated: result?.updated ?? 0,
+      dated,
+      datesStored: dated > 0 ? "convex" : "none",
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const backendMissingDates =
+      /extra field `finishedAts`|finishedAts.*not in the validator/i.test(
+        message
+      );
+    if (!backendMissingDates) throw err;
+
+    // Production Convex not redeployed yet — import titles, keep dates locally.
+    cacheFinishedAtsLocally(rows);
+    const result = await convexMutation("books:importMany", {
+      books: withoutDates,
+    });
+    return {
+      added: result?.added ?? 0,
+      updated: result?.updated ?? 0,
+      dated,
+      datesStored: dated > 0 ? "local" : "none",
+    };
+  }
 }
 
 export async function clearLibraryRemote() {

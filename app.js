@@ -457,6 +457,9 @@ function renderStats() {
   const rereadBooks = state.books.filter((b) => (b.timesRead ?? 1) > 1);
   const rereadCount = rereadBooks.length;
   const extraReads = Math.max(0, totalReads - totalBooks);
+  const datedBooks = state.books.filter(
+    (b) => Array.isArray(b.finishedAts) && b.finishedAts.length > 0
+  ).length;
   const estTotal = estimatedHandfulScreens(totalBooks);
   const progress = sortSession
     ? handfulProgress(sortSession, state.books)
@@ -498,8 +501,57 @@ function renderStats() {
     els.statsSummary.append(card);
   }
 
+  const hint = document.getElementById("stats-monthly-hint");
+  if (hint) {
+    if (totalBooks > 0 && datedBooks === 0) {
+      hint.hidden = false;
+      hint.textContent =
+        "No read dates stored yet — re-import your Google Sheet or CSV (with a Date Read column) to backfill the monthly chart.";
+    } else {
+      hint.hidden = true;
+      hint.textContent = "";
+    }
+  }
+
   renderMonthlyChart();
   renderRereadsList(rereadBooks);
+}
+
+/**
+ * @param {{ source: string, total: number, added: number, updated: number, dated: number, datesStored: "convex" | "local" | "none" }} result
+ */
+function formatImportStatus(result) {
+  const { source, total, added, updated, dated, datesStored } = result;
+  if (added === 0 && updated === 0 && dated === 0) {
+    return source === "sheet"
+      ? `Found ${total} book${total === 1 ? "" : "s"} — all already in your library.`
+      : "No new books found in that CSV.";
+  }
+
+  const parts = [];
+  if (added > 0 || updated > 0) {
+    parts.push(
+      source === "sheet"
+        ? `Imported ${added} of ${total} book${total === 1 ? "" : "s"} from the sheet${updated ? ` · updated ${updated}` : ""}`
+        : `Imported ${added} book${added === 1 ? "" : "s"}${updated ? ` · updated ${updated}` : ""}`
+    );
+  } else if (dated > 0) {
+    parts.push(
+      `Matched ${total} book${total === 1 ? "" : "s"} already in your library`
+    );
+  }
+
+  if (dated > 0 && datesStored === "convex") {
+    parts.push(`read dates saved for ${dated}`);
+  } else if (dated > 0 && datesStored === "local") {
+    parts.push(
+      `read dates cached for Stats (${dated}) — run npx convex deploy to store them in Convex`
+    );
+  } else if (dated === 0 && (added > 0 || updated > 0)) {
+    parts.push("no Date Read column found");
+  }
+
+  return `${parts.join(" · ")}.`;
 }
 
 function renderMonthlyChart() {
@@ -741,17 +793,21 @@ els.csvInput.addEventListener("change", async () => {
     busy = true;
     const text = await file.text();
     const rows = parseCsv(text);
-    const { added, updated } = await importBooksRemote(rows);
+    const { added, updated, dated, datesStored } = await importBooksRemote(rows);
     await refreshState();
     sortSession = syncHandfulWithBooks(
       sortSession ?? createHandfulSession(state.books),
       state.books
     );
     saveHandfulSession(sortSession);
-    els.libraryStatus.textContent =
-      added === 0 && updated === 0
-        ? "No new books found in that CSV."
-        : `Imported ${added} book${added === 1 ? "" : "s"}${updated ? ` · updated ${updated}` : ""}.`;
+    els.libraryStatus.textContent = formatImportStatus({
+      source: "CSV",
+      total: rows.length,
+      added,
+      updated,
+      dated,
+      datesStored,
+    });
     afterLibraryChange(previousCount);
   } catch {
     els.libraryStatus.textContent = "Could not read that CSV file.";
@@ -776,17 +832,21 @@ els.sheetsForm.addEventListener("submit", async (e) => {
   try {
     busy = true;
     const { books } = await importBooksFromSheetUrl(url);
-    const { added, updated } = await importBooksRemote(books);
+    const { added, updated, dated, datesStored } = await importBooksRemote(books);
     await refreshState();
     sortSession = syncHandfulWithBooks(
       sortSession ?? createHandfulSession(state.books),
       state.books
     );
     saveHandfulSession(sortSession);
-    els.libraryStatus.textContent =
-      added === 0 && updated === 0
-        ? `Found ${books.length} book${books.length === 1 ? "" : "s"} — all already in your library.`
-        : `Imported ${added} of ${books.length} book${books.length === 1 ? "" : "s"} from the sheet${updated ? ` · updated ${updated}` : ""}.`;
+    els.libraryStatus.textContent = formatImportStatus({
+      source: "sheet",
+      total: books.length,
+      added,
+      updated,
+      dated,
+      datesStored,
+    });
     afterLibraryChange(previousCount);
   } catch (err) {
     els.libraryStatus.textContent =

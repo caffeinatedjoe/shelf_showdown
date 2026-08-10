@@ -154,8 +154,10 @@ export const importMany = mutation({
           finishedAts?.length ?? 0
         );
         const timesChanged = nextTimesRead > current.timesRead;
+        const prevDates = current.finishedAts ?? [];
         const datesChanged =
-          (finishedAts?.length ?? 0) !== (current.finishedAts?.length ?? 0);
+          (finishedAts?.length ?? 0) !== prevDates.length ||
+          (finishedAts ?? []).some((ts, i) => ts !== prevDates[i]);
         if (timesChanged || datesChanged) {
           await ctx.db.patch(current._id, {
             timesRead: nextTimesRead,
