@@ -1219,7 +1219,7 @@ body {
 
 @media (min-width: 640px) {
   #app {
-    width: min(100%, 32rem);
+    width: min(100%, 36rem);
     padding: 0.85rem 1.15rem 0;
     gap: 0.65rem;
   }
@@ -1237,7 +1237,7 @@ body {
     width: clamp(2.1rem, 7vh, 2.85rem);
   }
 
-  /* Desktop keeps Skip / Undo buttons; swipe is for the app */
+  /* Wider / pointer layouts: Skip / Undo buttons; swipe is for the app */
   .handful-actions {
     display: flex;
   }
@@ -1253,6 +1253,217 @@ body {
   .swipe-edge-hint,
   .swipe-toast {
     display: none;
+  }
+}
+
+/* —— Desktop / laptop: native wide chrome —— */
+@media (min-width: 900px) {
+  body {
+    overflow: auto;
+    position: relative;
+    inset: auto;
+    min-height: 100%;
+    height: auto;
+  }
+
+  html {
+    overflow: auto;
+    height: auto;
+  }
+
+  #app {
+    width: min(100% - 2.5rem, 72rem);
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0 auto;
+    padding: 1rem 1.5rem 1.15rem;
+    gap: 0.75rem;
+  }
+
+  .app-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+    width: 100%;
+    gap: 1rem;
+    padding: 0.15rem 0 0.55rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .app-header .brand-logo {
+    font-size: 1.55rem;
+    justify-content: flex-start;
+  }
+
+  .account-bar {
+    justify-content: flex-end;
+    margin-left: auto;
+  }
+
+  .account-email {
+    max-width: 16rem;
+    display: inline;
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "nav"
+      "main";
+    gap: 0.85rem;
+  }
+
+  .app-nav,
+  .bottom-nav {
+    grid-area: nav;
+    margin: 0;
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.15rem 0 0.35rem;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  #main {
+    grid-area: main;
+    min-height: 0;
+  }
+
+  .nav-item {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.95rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    border-radius: var(--radius-sm);
+  }
+
+  .nav-item svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .nav-item.active {
+    background: rgba(93, 167, 184, 0.16);
+    color: var(--ink);
+  }
+
+  /* Auth: focused card in the wide shell */
+  .auth-panel {
+    width: min(100%, 26rem);
+    flex: 0 0 auto;
+    align-self: center;
+    margin: clamp(1.5rem, 10vh, 4.5rem) auto auto;
+    padding: 1.65rem 1.5rem 1.35rem;
+  }
+
+  /* Compare stays a focused column; lists/stats use the width */
+  #view-compare {
+    width: min(100%, 38rem);
+    margin-inline: auto;
+  }
+
+  #view-rankings,
+  #view-stats,
+  #view-library {
+    width: min(100%, 58rem);
+    margin-inline: auto;
+  }
+
+  #view-rankings .view-header,
+  #view-stats .view-header,
+  #view-library .view-header {
+    text-align: left;
+  }
+
+  #view-rankings .view-title,
+  #view-stats .view-title,
+  #view-library .view-title,
+  #view-rankings .view-lede,
+  #view-stats .view-lede,
+  #view-library .view-lede {
+    text-align: left;
+  }
+
+  .rankings-list,
+  .book-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.85rem;
+  }
+
+  .stats-section-chart {
+    min-height: 22rem;
+  }
+
+  #view-library {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 1rem;
+    row-gap: 0.75rem;
+    align-content: start;
+  }
+
+  #view-library .view-header,
+  #view-library .library-cta,
+  #view-library .import-row,
+  #view-library .status,
+  #view-library .book-list {
+    grid-column: 1 / -1;
+  }
+
+  #view-library .hint {
+    grid-column: 2;
+    text-align: left;
+    margin-top: -0.25rem;
+  }
+
+  #view-library .add-form,
+  #view-library .sheets-form {
+    height: fit-content;
+  }
+
+  .handful-cover {
+    width: clamp(2.4rem, 6vh, 3.25rem);
+  }
+
+  .handful-item,
+  .handful-placeholder {
+    min-height: 3.35rem;
+    max-height: 4.25rem;
+  }
+
+  .library-cta {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 1100px) {
+  #app {
+    width: min(100% - 3rem, 78rem);
+    padding: 1.15rem 1.85rem 1.25rem;
+  }
+
+  #view-compare {
+    width: min(100%, 42rem);
   }
 }
 
