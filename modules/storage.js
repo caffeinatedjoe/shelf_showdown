@@ -220,6 +220,11 @@ export async function importBooksRemote(rows) {
 
 export async function clearLibraryRemote() {
   await convexMutation("books:clearAll", {});
+  try {
+    localStorage.removeItem(FINISHED_ATS_CACHE_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 /**
