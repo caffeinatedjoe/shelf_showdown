@@ -1272,16 +1272,17 @@ body {
   }
 
   #app {
-    width: min(100% - 2rem, 88rem);
-    height: calc(100dvh - 1.5rem);
-    max-height: calc(100dvh - 1.5rem);
-    margin: 0.75rem auto;
-    padding: 1.1rem 1.75rem 1.25rem;
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    padding: 1rem clamp(1.25rem, 3vw, 2.5rem) 1.15rem;
     gap: 0.85rem;
-    background: rgba(255, 255, 255, 0.82);
-    border: 1px solid var(--line);
-    border-radius: 1.25rem;
-    box-shadow: var(--shadow);
+    background: rgba(255, 255, 255, 0.88);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
   }
@@ -1469,6 +1470,10 @@ body {
     width: 100%;
   }
 
+  #compare-active #compare-progress {
+    grid-column: 1 / -1;
+  }
+
   #compare-empty,
   #compare-done {
     max-width: 36rem;
@@ -1545,13 +1550,19 @@ body {
 
 @media (min-width: 1200px) {
   #app {
-    width: min(100% - 3rem, 96rem);
-    padding: 1.25rem 2rem 1.35rem;
+    padding: 1.15rem clamp(1.75rem, 4vw, 3.5rem) 1.25rem;
   }
 
   #compare-active {
     grid-template-columns: minmax(0, 1.7fr) minmax(17rem, 0.55fr);
     column-gap: 2rem;
+    max-width: 72rem;
+  }
+
+  #view-rankings,
+  #view-stats,
+  #view-library {
+    max-width: 80rem;
   }
 
   .rankings-list,
