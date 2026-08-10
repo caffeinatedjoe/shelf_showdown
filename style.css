@@ -49,6 +49,8 @@ body {
   line-height: 1.5;
   color: var(--ink);
   background: linear-gradient(180deg, #f7fafc 0%, var(--bg) 45%, var(--bg-soft) 100%);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 #app {
@@ -57,7 +59,7 @@ body {
   height: 100%;
   max-height: 100dvh;
   margin: 0 auto;
-  padding: 0.65rem 0.85rem 0;
+  padding: 0.65rem max(0.85rem, env(safe-area-inset-right, 0px)) 0 max(0.85rem, env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
@@ -152,6 +154,11 @@ body {
   stroke: rgba(255, 255, 255, 0.55);
   stroke-width: 0.9;
   stroke-linecap: round;
+}
+
+.brand-tagline {
+  display: none;
+  margin: 0;
 }
 
 .account-bar {
@@ -1107,15 +1114,15 @@ body {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.1rem;
-  padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+  padding: 0.4rem 0.3rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
   background: rgba(255, 255, 255, 0.94);
   border-top: 1px solid var(--line);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 -6px 20px rgba(26, 42, 58, 0.06);
   z-index: 20;
-  margin-inline: -0.85rem;
-  width: calc(100% + 1.7rem);
+  margin-inline: calc(-1 * max(0.85rem, env(safe-area-inset-left, 0px)));
+  width: calc(100% + max(0.85rem, env(safe-area-inset-left, 0px)) + max(0.85rem, env(safe-area-inset-right, 0px)));
 }
 
 .nav-item {
@@ -1124,8 +1131,10 @@ body {
   background: transparent;
   display: grid;
   justify-items: center;
+  align-content: center;
   gap: 0.2rem;
-  padding: 0.35rem 0.15rem;
+  min-height: 3.05rem;
+  padding: 0.4rem 0.15rem;
   cursor: pointer;
   color: var(--ink-dim);
   font-family: inherit;
@@ -1135,6 +1144,10 @@ body {
   text-transform: uppercase;
   border-radius: 0.65rem;
   transition: color 0.15s ease, background 0.15s ease;
+}
+
+.nav-item:active {
+  background: rgba(93, 167, 184, 0.14);
 }
 
 .nav-item svg {
@@ -1264,6 +1277,7 @@ body {
     inset: auto;
     min-height: 100%;
     height: auto;
+    touch-action: auto;
   }
 
   html {
@@ -1277,9 +1291,9 @@ body {
     height: 100dvh;
     max-height: 100dvh;
     margin: 0;
-    padding: 1rem clamp(1.25rem, 3vw, 2.5rem) 1.15rem;
+    padding: 0.85rem clamp(1.25rem, 3vw, 2.5rem) 1rem;
     gap: 0.85rem;
-    background: rgba(255, 255, 255, 0.88);
+    background: rgba(255, 255, 255, 0.9);
     border: none;
     border-radius: 0;
     box-shadow: none;
@@ -1287,54 +1301,79 @@ body {
     -webkit-backdrop-filter: blur(10px);
   }
 
-  .app-header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    text-align: left;
-    width: 100%;
-    gap: 1rem;
-    padding: 0.1rem 0 0.65rem;
-    border-bottom: 1px solid var(--line);
+  /* Compact pointer-first controls */
+  .btn {
+    min-height: 2.35rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
   }
 
-  .app-header .brand-logo {
-    font-size: 1.55rem;
+  .btn-sm {
+    min-height: 2rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.72rem;
+  }
+
+  .btn-pill {
+    min-height: 2.5rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.84rem;
+    letter-spacing: 0.05em;
+  }
+
+  .field input {
+    padding: 0.7rem 0.85rem;
+    font-size: 0.95rem;
+  }
+
+  .import-row {
     justify-content: flex-start;
   }
 
-  .account-bar {
-    justify-content: flex-end;
-    margin-left: auto;
-  }
-
-  .account-email {
-    max-width: 18rem;
-    display: inline;
-  }
-
-  .app-shell {
+  /* Signed-in: single top toolbar */
+  #app:has(#app-shell:not([hidden])) {
     display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
-      "nav"
-      "main";
-    gap: 0.95rem;
-    min-height: 0;
+      "brand nav account"
+      "main main main";
+    column-gap: 1rem;
+    row-gap: 0;
+    align-items: center;
   }
 
-  .app-nav,
-  .bottom-nav {
+  #app:has(#app-shell:not([hidden])) .app-header {
+    display: contents;
+  }
+
+  #app:has(#app-shell:not([hidden])) .brand-logo {
+    grid-area: brand;
+    font-size: 1.4rem;
+    justify-content: flex-start;
+  }
+
+  #app:has(#app-shell:not([hidden])) .account-bar {
+    grid-area: account;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  #app:has(#app-shell:not([hidden])) .app-shell {
+    display: contents;
+  }
+
+  #app:has(#app-shell:not([hidden])) .app-nav,
+  #app:has(#app-shell:not([hidden])) .bottom-nav {
     grid-area: nav;
     margin: 0;
-    width: 100%;
+    width: auto;
     display: flex;
     flex-wrap: wrap;
-    justify-content: flex-start;
+    justify-content: center;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0;
+    gap: 0.3rem;
+    padding: 0.2rem 0;
     background: transparent;
     border: none;
     box-shadow: none;
@@ -1342,9 +1381,17 @@ body {
     -webkit-backdrop-filter: none;
   }
 
-  #main {
+  #app:has(#app-shell:not([hidden])) #main {
     grid-area: main;
     min-height: 0;
+    align-self: stretch;
+    border-top: 1px solid var(--line);
+    padding-top: 0.95rem;
+  }
+
+  .account-email {
+    max-width: 18rem;
+    display: inline;
   }
 
   .nav-item {
@@ -1352,16 +1399,17 @@ body {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 0.45rem;
-    padding: 0.6rem 1.05rem;
-    font-size: 0.8rem;
+    gap: 0.4rem;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.78rem;
     letter-spacing: 0.04em;
     border-radius: var(--radius-sm);
   }
 
   .nav-item svg {
-    width: 1.2rem;
-    height: 1.2rem;
+    width: 1.15rem;
+    height: 1.15rem;
   }
 
   .nav-item.active {
@@ -1369,25 +1417,63 @@ body {
     color: var(--ink);
   }
 
-  /* Auth: card inside the wide app surface */
+  /* Auth: split desktop welcome + form */
   #app:has(#auth-panel:not([hidden])) {
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: minmax(18rem, 1.05fr) minmax(22rem, 0.95fr);
+    grid-template-rows: minmax(0, 1fr);
+    padding: 0;
+    gap: 0;
+    background: transparent;
   }
 
   #app:has(#auth-panel:not([hidden])) .app-header {
+    grid-column: 1;
+    grid-row: 1;
+    height: 100%;
+    flex-direction: column;
     justify-content: center;
-    border-bottom: 1px solid var(--line);
+    align-items: flex-start;
+    text-align: left;
+    gap: 1rem;
+    padding: clamp(2rem, 6vw, 4.5rem);
+    border: none;
+    border-right: 1px solid var(--line);
+    background:
+      linear-gradient(165deg, rgba(255, 255, 255, 0.96) 0%, rgba(230, 243, 246, 0.92) 55%, rgba(212, 232, 237, 0.9) 100%);
+  }
+
+  #app:has(#auth-panel:not([hidden])) .brand-logo {
+    font-size: clamp(2rem, 3.6vw, 2.85rem);
+    justify-content: flex-start;
+  }
+
+  #app:has(#auth-panel:not([hidden])) .brand-mark {
+    width: 2.3rem;
+    height: 1.7rem;
+  }
+
+  #app:has(#auth-panel:not([hidden])) .brand-tagline {
+    display: block;
+    max-width: 24rem;
+    color: var(--ink-muted);
+    font-size: clamp(1rem, 1.5vw, 1.15rem);
+    font-weight: 600;
+    line-height: 1.45;
   }
 
   .auth-panel {
-    width: min(100%, 28rem);
+    grid-column: 2;
+    grid-row: 1;
+    width: min(100% - 3rem, 26rem);
     flex: 0 0 auto;
     align-self: center;
-    margin: clamp(2rem, 12vh, 5rem) auto auto;
+    justify-self: center;
+    margin: 0;
     padding: 1.85rem 1.65rem 1.45rem;
   }
 
-  /* Views use the full shell width */
+  /* Views use the shell width */
   #view-compare,
   #view-rankings,
   #view-stats,
@@ -1416,6 +1502,10 @@ body {
     text-align: left;
   }
 
+  #view-compare .view-header {
+    max-width: 64rem;
+  }
+
   /* Showdown: ranking stage + action rail */
   #compare-active {
     display: grid;
@@ -1427,6 +1517,8 @@ body {
     column-gap: 1.5rem;
     row-gap: 0.75rem;
     align-items: stretch;
+    width: 100%;
+    max-width: 64rem;
   }
 
   #compare-active .handful-prompt {
@@ -1476,10 +1568,22 @@ body {
 
   #compare-empty,
   #compare-done {
-    max-width: 36rem;
+    max-width: 42rem;
     margin-inline: 0;
     align-items: flex-start;
     text-align: left;
+    flex: 0 1 auto;
+    min-height: 12rem;
+    padding: 1.75rem 1.5rem;
+  }
+
+  #compare-empty .compare-actions,
+  #compare-done .compare-actions {
+    justify-content: flex-start;
+  }
+
+  .handful-item:hover {
+    box-shadow: var(--shadow);
   }
 
   .rankings-list,
@@ -1504,6 +1608,7 @@ body {
     column-gap: 1.15rem;
     row-gap: 0.85rem;
     align-content: start;
+    max-width: 72rem;
   }
 
   #view-library .view-header,
@@ -1523,6 +1628,11 @@ body {
   #view-library .add-form,
   #view-library .sheets-form {
     height: fit-content;
+  }
+
+  #view-rankings,
+  #view-stats {
+    max-width: 72rem;
   }
 
   .handful-cover {
@@ -1550,7 +1660,11 @@ body {
 
 @media (min-width: 1200px) {
   #app {
-    padding: 1.15rem clamp(1.75rem, 4vw, 3.5rem) 1.25rem;
+    padding: 1rem clamp(1.75rem, 4vw, 3.5rem) 1.15rem;
+  }
+
+  #app:has(#auth-panel:not([hidden])) {
+    padding: 0;
   }
 
   #compare-active {
@@ -1571,7 +1685,8 @@ body {
   }
 }
 
-@media (max-height: 740px) {
+/* Short phones only — don't compress desktop windows */
+@media (max-width: 899px) and (max-height: 740px) {
   .brand-logo {
     font-size: 1.35rem;
   }
@@ -1650,11 +1765,12 @@ body {
   }
 
   .bottom-nav {
-    padding: 0.25rem 0.2rem calc(0.25rem + env(safe-area-inset-bottom, 0px));
+    padding: 0.3rem 0.2rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
   }
 
   .nav-item {
-    padding: 0.2rem 0.1rem;
+    min-height: 2.7rem;
+    padding: 0.25rem 0.1rem;
     gap: 0.1rem;
     font-size: 0.58rem;
   }
@@ -1665,7 +1781,7 @@ body {
   }
 }
 
-@media (max-height: 620px) {
+@media (max-width: 899px) and (max-height: 620px) {
   .account-bar {
     display: none;
   }
