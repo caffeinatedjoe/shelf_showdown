@@ -291,7 +291,8 @@ function parseTimesRead(raw) {
 
 /**
  * Parse a finish/read date cell into a unix timestamp (ms).
- * Accepts ISO, locale dates, and Google Sheets `Date(y,m,d)` values.
+ * Accepts ISO, locale dates (including 2-digit years like 8/4/26),
+ * month/year (5/2019), and Google Sheets `Date(y,m,d)` values.
  *
  * @param {string | undefined} raw
  * @returns {number | null}
@@ -299,6 +300,9 @@ function parseTimesRead(raw) {
 export function parseFinishedAt(raw) {
   const text = (raw || "").trim();
   if (!text) return null;
+
+  // Durations / clock times are not finish dates.
+  if (/^\d{1,3}:\d{2}(?::\d{2})?$/.test(text)) return null;
 
   const gviz = text.match(
     /^Date\((\d{4}),\s*(\d{1,2}),\s*(\d{1,2})(?:,\s*\d{1,2},\s*\d{1,2},\s*\d{1,2})?\)$/i
@@ -319,43 +323,44 @@ export function parseFinishedAt(raw) {
     return null;
   }
 
-  // Bare years / short numbers are not finish dates.
+  // Bare years / short numbers (e.g. Annual Count) are not finish dates.
   if (/^\d{1,4}$/.test(text) || /^\d{5,}$/.test(text)) return null;
 
   const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
   if (iso) {
-    const year = Number(iso[1]);
-    const month = Number(iso[2]);
-    const day = Number(iso[3]);
-    const dt = new Date(year, month - 1, day);
-    if (
-      dt.getFullYear() === year &&
-      dt.getMonth() === month - 1 &&
-      dt.getDate() === day
-    ) {
-      return dt.getTime();
-    }
-    return null;
+    return ymdToTime(Number(iso[1]), Number(iso[2]), Number(iso[3]));
   }
 
+  // m/d/yy, m/d/yyyy, yyyy/m/d, d/m/yyyy when day > 12
   const slash = text.match(/^(\d{1,4})[\/\-.\s](\d{1,2})[\/\-.\s](\d{1,4})$/);
   if (slash) {
-    let a = Number(slash[1]);
-    let b = Number(slash[2]);
-    let c = Number(slash[3]);
+    const a = Number(slash[1]);
+    const b = Number(slash[2]);
+    const c = Number(slash[3]);
+    const aLen = String(slash[1]).length;
+    const cLen = String(slash[3]).length;
     /** @type {number} */
     let year;
     /** @type {number} */
     let month;
     /** @type {number} */
     let day;
-    if (String(slash[1]).length === 4) {
+    if (aLen === 4) {
       year = a;
       month = b;
       day = c;
-    } else if (String(slash[3]).length === 4) {
+    } else if (cLen === 4) {
       year = c;
-      // Prefer MDY when first part > 12 would be invalid as month — else MDY (US reading logs).
+      if (a > 12) {
+        day = a;
+        month = b;
+      } else {
+        month = a;
+        day = b;
+      }
+    } else if (cLen === 2 && aLen <= 2) {
+      // m/d/yy (US reading logs) — not a bare count.
+      year = expandTwoDigitYear(c);
       if (a > 12) {
         day = a;
         month = b;
@@ -366,16 +371,17 @@ export function parseFinishedAt(raw) {
     } else {
       return null;
     }
-    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
-    const dt = new Date(year, month - 1, day);
-    if (
-      dt.getFullYear() === year &&
-      dt.getMonth() === month - 1 &&
-      dt.getDate() === day
-    ) {
-      return dt.getTime();
-    }
-    return null;
+    return ymdToTime(year, month, day);
+  }
+
+  // Month/year only: 5/2019 or 5/19
+  const monthYear = text.match(/^(\d{1,2})[\/\-.\s](\d{2,4})$/);
+  if (monthYear) {
+    const month = Number(monthYear[1]);
+    const yearRaw = Number(monthYear[2]);
+    const year =
+      String(monthYear[2]).length === 2 ? expandTwoDigitYear(yearRaw) : yearRaw;
+    return ymdToTime(year, month, 1);
   }
 
   const parsed = Date.parse(text);
@@ -383,6 +389,34 @@ export function parseFinishedAt(raw) {
   const dt = new Date(parsed);
   const year = dt.getFullYear();
   if (year < 1900 || year > 2100) return null;
+  return dt.getTime();
+}
+
+/**
+ * @param {number} yy
+ */
+function expandTwoDigitYear(yy) {
+  // Same pivot as many spreadsheet UIs: 70–99 → 1970–1999, 00–69 → 2000–2069.
+  return yy >= 70 ? 1900 + yy : 2000 + yy;
+}
+
+/**
+ * @param {number} year
+ * @param {number} month 1-12
+ * @param {number} day
+ * @returns {number | null}
+ */
+function ymdToTime(year, month, day) {
+  if (year < 1900 || year > 2100) return null;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const dt = new Date(year, month - 1, day);
+  if (
+    dt.getFullYear() !== year ||
+    dt.getMonth() !== month - 1 ||
+    dt.getDate() !== day
+  ) {
+    return null;
+  }
   return dt.getTime();
 }
 

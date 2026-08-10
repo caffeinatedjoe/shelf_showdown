@@ -6,7 +6,7 @@ import {
   loadState,
   removeBookRemote,
   setRatingsRemote,
-} from "./modules/storage.js?v=20260810b";
+} from "./modules/storage.js?v=20260810c";
 import {
   clearHandfulSession,
   createFreshHandfulSession,
@@ -20,15 +20,15 @@ import {
   submitHandful,
   syncHandfulWithBooks,
   undoHandful,
-} from "./modules/handful.js?v=20260810b";
-import { parseCsv } from "./modules/tabular.js?v=20260810b";
-import { importBooksFromSheetUrl } from "./modules/sheets.js?v=20260810b";
+} from "./modules/handful.js?v=20260810c";
+import { parseCsv } from "./modules/tabular.js?v=20260810c";
+import { importBooksFromSheetUrl } from "./modules/sheets.js?v=20260810c";
 import {
   getCurrentUser,
   isSignedInLocally,
   passwordAuth,
   signOut,
-} from "./modules/auth.js?v=20260810b";
+} from "./modules/auth.js?v=20260810c";
 
 /** @typedef {import("./modules/storage.js").AppState} AppState */
 /** @typedef {import("./modules/storage.js").Book} Book */
@@ -506,11 +506,16 @@ function renderStats() {
     if (totalBooks > 0 && datedBooks === 0) {
       hint.hidden = false;
       hint.textContent =
-        "No read dates stored yet — re-import your Google Sheet or CSV (with a Date Read column) to backfill the monthly chart.";
+        "No read dates yet. Re-import your Google Sheet or CSV that includes a Date Read / Date Finished column — the chart does not use the date you added the book to Shelf Showdown.";
     } else {
       hint.hidden = true;
       hint.textContent = "";
     }
+  }
+
+  // Keep the monthly section visible when we need to show the missing-dates hint.
+  if (els.statsMonthly) {
+    els.statsMonthly.hidden = totalBooks === 0;
   }
 
   renderMonthlyChart();
@@ -565,26 +570,26 @@ function renderMonthlyChart() {
 
   /** @type {Map<string, number>} */
   const byMonth = new Map();
+  let datedReads = 0;
   for (const book of state.books) {
-    const finishedAts =
-      Array.isArray(book.finishedAts) && book.finishedAts.length > 0
-        ? book.finishedAts
-        : [book.createdAt];
-    for (const ts of finishedAts) {
+    if (!Array.isArray(book.finishedAts) || book.finishedAts.length === 0) {
+      continue;
+    }
+    for (const ts of book.finishedAts) {
       const d = new Date(ts);
       if (Number.isNaN(d.getTime())) continue;
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       byMonth.set(key, (byMonth.get(key) ?? 0) + 1);
+      datedReads++;
     }
   }
 
   const keys = [...byMonth.keys()].sort();
-  if (keys.length === 0) {
-    els.statsMonthly.hidden = true;
+  if (keys.length === 0 || datedReads === 0) {
+    // Leave section visibility to renderStats (hint vs chart). Do not use createdAt.
+    els.monthlyChart.replaceChildren();
     return;
   }
-
-  els.statsMonthly.hidden = false;
   const max = Math.max(...keys.map((k) => byMonth.get(k) ?? 0), 1);
   const monthFmt = new Intl.DateTimeFormat(undefined, {
     month: "short",

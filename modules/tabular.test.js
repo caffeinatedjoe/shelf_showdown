@@ -34,9 +34,29 @@ describe("parseFinishedAt", () => {
     assert.equal(d.getDate(), 2);
   });
 
+  it("parses two-digit year slash dates", () => {
+    const ts = parseFinishedAt("8/4/26");
+    assert.ok(ts != null);
+    const d = new Date(ts);
+    assert.equal(d.getFullYear(), 2026);
+    assert.equal(d.getMonth(), 7);
+    assert.equal(d.getDate(), 4);
+  });
+
+  it("parses month/year dates", () => {
+    const ts = parseFinishedAt("5/2019");
+    assert.ok(ts != null);
+    const d = new Date(ts);
+    assert.equal(d.getFullYear(), 2019);
+    assert.equal(d.getMonth(), 4);
+    assert.equal(d.getDate(), 1);
+  });
+
   it("rejects bare numbers", () => {
     assert.equal(parseFinishedAt("3"), null);
     assert.equal(parseFinishedAt("2024"), null);
+    assert.equal(parseFinishedAt("37"), null);
+    assert.equal(parseFinishedAt("06:59"), null);
   });
 });
 

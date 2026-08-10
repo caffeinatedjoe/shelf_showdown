@@ -1,4 +1,4 @@
-import { convexMutation, convexQuery } from "./convexClient.js?v=20260810b";
+import { convexMutation, convexQuery } from "./convexClient.js?v=20260810c";
 
 export const INITIAL_RATING = 1500;
 
@@ -6,7 +6,7 @@ const FINISHED_ATS_CACHE_KEY = "shelf.showdown.finishedAts";
 /** `1` = Convex accepts finishedAts; `0` = rejected (prod not redeployed). */
 const FINISHED_ATS_SUPPORT_KEY = "shelf.showdown.supportsFinishedAts";
 /** Bump to re-probe Convex for finishedAts support after a deploy. */
-export const FINISHED_ATS_SUPPORT_VERSION = "20260810b";
+export const FINISHED_ATS_SUPPORT_VERSION = "20260810c";
 const FINISHED_ATS_SUPPORT_VERSION_KEY = "shelf.showdown.supportsFinishedAts.v";
 
 /**

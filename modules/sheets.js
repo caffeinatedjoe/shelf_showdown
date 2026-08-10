@@ -4,7 +4,7 @@
  * without a backend or CORS proxy.
  */
 
-import { extractBooksFromMatrix } from "./tabular.js?v=20260810b";
+import { extractBooksFromMatrix } from "./tabular.js?v=20260810c";
 
 /** @typedef {{ title: string, author: string, timesRead: number, finishedAts: number[] }} BookRow */
 
@@ -175,6 +175,16 @@ function booksFromGvizTable(table) {
     return out;
   });
 
+  // Gviz often leaves col.label blank; the first row may also blank date headers
+  // even when CSV export shows "date read". Label true date columns for detection.
+  // (Skip datetime — this sheet uses that for Length clock times.)
+  for (let i = 0; i < width; i++) {
+    const t = (columnTypes[i] || "").toLowerCase();
+    if (t === "date" && !headers[i]) {
+      headers[i] = "Date Read";
+    }
+  }
+
   return extractBooksFromMatrix(matrix, { headers, columnTypes });
 }
 
@@ -184,13 +194,16 @@ function booksFromGvizTable(table) {
  */
 function cellToString(cell, colType = "") {
   if (!cell) return "";
+  const type = colType.toLowerCase();
   // Prefer raw Date(y,m,d) for date columns — more reliable than locale `f`.
-  if (
-    (colType === "date" || colType === "datetime") &&
-    cell.v != null &&
-    String(cell.v).trim() !== ""
-  ) {
-    return String(cell.v).trim();
+  if (type === "date" || type === "datetime") {
+    if (cell.v != null && String(cell.v).trim() !== "") {
+      return String(cell.v).trim();
+    }
+    if (cell.f != null && String(cell.f).trim() !== "") {
+      return String(cell.f).trim();
+    }
+    return "";
   }
   if (cell.f != null && String(cell.f).trim() !== "") return String(cell.f).trim();
   if (cell.v == null) return "";
