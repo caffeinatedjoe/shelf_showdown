@@ -6,7 +6,7 @@ import {
   loadState,
   removeBookRemote,
   setRatingsRemote,
-} from "./modules/storage.js?v=20260810c";
+} from "./modules/storage.js?v=20260810d";
 import {
   clearHandfulSession,
   createFreshHandfulSession,
@@ -20,15 +20,15 @@ import {
   submitHandful,
   syncHandfulWithBooks,
   undoHandful,
-} from "./modules/handful.js?v=20260810c";
-import { parseCsv } from "./modules/tabular.js?v=20260810c";
-import { importBooksFromSheetUrl } from "./modules/sheets.js?v=20260810c";
+} from "./modules/handful.js?v=20260810d";
+import { parseCsv } from "./modules/tabular.js?v=20260810d";
+import { importBooksFromSheetUrl } from "./modules/sheets.js?v=20260810d";
 import {
   getCurrentUser,
   isSignedInLocally,
   passwordAuth,
   signOut,
-} from "./modules/auth.js?v=20260810c";
+} from "./modules/auth.js?v=20260810d";
 
 /** @typedef {import("./modules/storage.js").AppState} AppState */
 /** @typedef {import("./modules/storage.js").Book} Book */
@@ -584,42 +584,163 @@ function renderMonthlyChart() {
     }
   }
 
-  const keys = [...byMonth.keys()].sort();
-  if (keys.length === 0 || datedReads === 0) {
-    // Leave section visibility to renderStats (hint vs chart). Do not use createdAt.
+  const rawKeys = [...byMonth.keys()].sort();
+  if (rawKeys.length === 0 || datedReads === 0) {
     els.monthlyChart.replaceChildren();
     return;
   }
-  const max = Math.max(...keys.map((k) => byMonth.get(k) ?? 0), 1);
+
+  const firstKey = rawKeys[0];
+  const lastKey = rawKeys[rawKeys.length - 1];
+  if (!firstKey || !lastKey) {
+    els.monthlyChart.replaceChildren();
+    return;
+  }
+
+  // Fill every month from first → last so the line shows pacing, not only busy months.
+  const keys = fillMonthKeys(firstKey, lastKey);
+  const values = keys.map((k) => byMonth.get(k) ?? 0);
+  const max = Math.max(...values, 1);
   const monthFmt = new Intl.DateTimeFormat(undefined, {
     month: "short",
     year: "2-digit",
   });
 
-  for (const key of keys) {
-    const count = byMonth.get(key) ?? 0;
+  const n = keys.length;
+  const padL = 28;
+  const padR = 12;
+  const padT = 18;
+  const padB = 36;
+  const plotH = 220;
+  const step = n <= 1 ? 48 : Math.max(18, Math.min(42, Math.floor(520 / Math.max(n - 1, 1))));
+  const plotW = n <= 1 ? 48 : step * (n - 1);
+  const width = padL + plotW + padR;
+  const height = padT + plotH + padB;
+
+  /** @type {{ x: number, y: number, key: string, count: number, label: string }[]} */
+  const points = keys.map((key, i) => {
+    const count = values[i] ?? 0;
     const [y, m] = key.split("-").map(Number);
     const label = monthFmt.format(new Date(y, m - 1, 1));
+    const x = padL + (n <= 1 ? plotW / 2 : i * step);
+    const yPix = padT + plotH - (count / max) * plotH;
+    return { x, y: yPix, key, count, label };
+  });
 
-    const li = document.createElement("li");
-    li.className = "monthly-bar";
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS, "svg");
+  svg.setAttribute("class", "monthly-line-svg");
+  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  svg.setAttribute("width", String(width));
+  svg.setAttribute("height", String(height));
+  svg.setAttribute("preserveAspectRatio", "xMinYMid meet");
+  svg.setAttribute("role", "presentation");
 
-    const bar = document.createElement("div");
-    bar.className = "monthly-bar-fill";
-    bar.style.height = `${Math.max(8, Math.round((count / max) * 100))}%`;
-    bar.title = `${count} book${count === 1 ? "" : "s"} read`;
+  // Horizontal gridlines
+  for (let g = 0; g <= 4; g++) {
+    const gy = padT + (plotH * g) / 4;
+    const grid = document.createElementNS(svgNS, "line");
+    grid.setAttribute("class", "monthly-grid");
+    grid.setAttribute("x1", String(padL));
+    grid.setAttribute("x2", String(padL + plotW));
+    grid.setAttribute("y1", String(gy));
+    grid.setAttribute("y2", String(gy));
+    svg.append(grid);
 
-    const countEl = document.createElement("span");
-    countEl.className = "monthly-count";
-    countEl.textContent = String(count);
-
-    const labelEl = document.createElement("span");
-    labelEl.className = "monthly-label";
-    labelEl.textContent = label;
-
-    li.append(countEl, bar, labelEl);
-    els.monthlyChart.append(li);
+    const tickVal = Math.round(max * (1 - g / 4));
+    if (g === 0 || g === 4 || tickVal > 0) {
+      const tick = document.createElementNS(svgNS, "text");
+      tick.setAttribute("class", "monthly-y-label");
+      tick.setAttribute("x", String(padL - 6));
+      tick.setAttribute("y", String(gy + 3));
+      tick.setAttribute("text-anchor", "end");
+      tick.textContent = String(tickVal);
+      svg.append(tick);
+    }
   }
+
+  if (points.length >= 2) {
+    const lineD = points
+      .map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+      .join(" ");
+    const areaD = `${lineD} L${points[points.length - 1].x.toFixed(1)} ${padT + plotH} L${points[0].x.toFixed(1)} ${padT + plotH} Z`;
+
+    const area = document.createElementNS(svgNS, "path");
+    area.setAttribute("class", "monthly-area");
+    area.setAttribute("d", areaD);
+    svg.append(area);
+
+    const line = document.createElementNS(svgNS, "path");
+    line.setAttribute("class", "monthly-line");
+    line.setAttribute("d", lineD);
+    line.setAttribute("fill", "none");
+    svg.append(line);
+  }
+
+  // Dots + x labels (thin out labels when dense)
+  const labelEvery = n > 24 ? Math.ceil(n / 12) : n > 12 ? 2 : 1;
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    const dot = document.createElementNS(svgNS, "circle");
+    dot.setAttribute("class", "monthly-dot");
+    dot.setAttribute("cx", String(p.x));
+    dot.setAttribute("cy", String(p.y));
+    dot.setAttribute("r", n > 40 ? "2.5" : "3.5");
+    dot.setAttribute(
+      "aria-label",
+      `${p.label}: ${p.count} book${p.count === 1 ? "" : "s"} read`
+    );
+    const title = document.createElementNS(svgNS, "title");
+    title.textContent = `${p.label}: ${p.count} book${p.count === 1 ? "" : "s"} read`;
+    dot.append(title);
+    svg.append(dot);
+
+    if (i % labelEvery === 0 || i === points.length - 1) {
+      const label = document.createElementNS(svgNS, "text");
+      label.setAttribute("class", "monthly-x-label");
+      label.setAttribute("x", String(p.x));
+      label.setAttribute("y", String(padT + plotH + 16));
+      label.setAttribute("text-anchor", "end");
+      label.setAttribute(
+        "transform",
+        `rotate(-40 ${p.x} ${padT + plotH + 16})`
+      );
+      label.textContent = p.label;
+      svg.append(label);
+    }
+  }
+
+  els.monthlyChart.append(svg);
+  els.monthlyChart.setAttribute(
+    "aria-label",
+    `Books read per month, ${datedReads} dated reads across ${rawKeys.length} months`
+  );
+}
+
+/**
+ * Inclusive YYYY-MM range with every month filled.
+ * @param {string} startKey
+ * @param {string} endKey
+ * @returns {string[]}
+ */
+function fillMonthKeys(startKey, endKey) {
+  const [sy, sm] = startKey.split("-").map(Number);
+  const [ey, em] = endKey.split("-").map(Number);
+  /** @type {string[]} */
+  const keys = [];
+  let y = sy;
+  let m = sm;
+  while (y < ey || (y === ey && m <= em)) {
+    keys.push(`${y}-${String(m).padStart(2, "0")}`);
+    m += 1;
+    if (m > 12) {
+      m = 1;
+      y += 1;
+    }
+    // Safety cap (~40 years)
+    if (keys.length > 500) break;
+  }
+  return keys;
 }
 
 /**

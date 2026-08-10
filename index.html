@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20260806c" />
+  <link rel="stylesheet" href="style.css?v=20260810d" />
 </head>
 <body>
   <div id="app">
@@ -124,10 +124,15 @@
 
           <div id="stats-summary" class="stats-grid" aria-live="polite"></div>
 
-          <div id="stats-monthly" class="stats-section" hidden>
+          <div id="stats-monthly" class="stats-section stats-section-chart" hidden>
             <h3 class="stats-heading">Books read by month</h3>
             <p id="stats-monthly-hint" class="empty-state" hidden></p>
-            <ul id="monthly-chart" class="monthly-chart" aria-label="Books read per month"></ul>
+            <div
+              id="monthly-chart"
+              class="monthly-chart"
+              role="img"
+              aria-label="Books read per month"
+            ></div>
           </div>
 
           <div class="stats-section">
@@ -210,6 +215,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=20260810c"></script>
+  <script type="module" src="app.js?v=20260810d"></script>
 </body>
 </html>

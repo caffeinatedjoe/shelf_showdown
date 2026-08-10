@@ -1,4 +1,4 @@
-import { convexMutation, convexQuery } from "./convexClient.js?v=20260810c";
+import { convexMutation, convexQuery } from "./convexClient.js?v=20260810d";
 
 export const INITIAL_RATING = 1500;
 
