@@ -6,7 +6,7 @@ import {
   loadState,
   removeBookRemote,
   setRatingsRemote,
-} from "./modules/storage.js";
+} from "./modules/storage.js?v=20260810b";
 import {
   clearHandfulSession,
   createFreshHandfulSession,
@@ -20,15 +20,15 @@ import {
   submitHandful,
   syncHandfulWithBooks,
   undoHandful,
-} from "./modules/handful.js";
-import { parseCsv } from "./modules/tabular.js";
-import { importBooksFromSheetUrl } from "./modules/sheets.js";
+} from "./modules/handful.js?v=20260810b";
+import { parseCsv } from "./modules/tabular.js?v=20260810b";
+import { importBooksFromSheetUrl } from "./modules/sheets.js?v=20260810b";
 import {
   getCurrentUser,
   isSignedInLocally,
   passwordAuth,
   signOut,
-} from "./modules/auth.js";
+} from "./modules/auth.js?v=20260810b";
 
 /** @typedef {import("./modules/storage.js").AppState} AppState */
 /** @typedef {import("./modules/storage.js").Book} Book */
@@ -545,7 +545,7 @@ function formatImportStatus(result) {
     parts.push(`read dates saved for ${dated}`);
   } else if (dated > 0 && datesStored === "local") {
     parts.push(
-      `read dates cached for Stats (${dated}) — run npx convex deploy to store them in Convex`
+      `read dates saved for Stats (${dated}) — deploy Convex (npx convex deploy) to store them in the cloud`
     );
   } else if (dated === 0 && (added > 0 || updated > 0)) {
     parts.push("no Date Read column found");

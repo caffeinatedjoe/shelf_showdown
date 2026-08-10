@@ -1,8 +1,13 @@
-import { convexMutation, convexQuery } from "./convexClient.js";
+import { convexMutation, convexQuery } from "./convexClient.js?v=20260810b";
 
 export const INITIAL_RATING = 1500;
 
 const FINISHED_ATS_CACHE_KEY = "shelf.showdown.finishedAts";
+/** `1` = Convex accepts finishedAts; `0` = rejected (prod not redeployed). */
+const FINISHED_ATS_SUPPORT_KEY = "shelf.showdown.supportsFinishedAts";
+/** Bump to re-probe Convex for finishedAts support after a deploy. */
+export const FINISHED_ATS_SUPPORT_VERSION = "20260810b";
+const FINISHED_ATS_SUPPORT_VERSION_KEY = "shelf.showdown.supportsFinishedAts.v";
 
 /**
  * @typedef {{ id: string, title: string, author: string, rating: number, comparisons: number, timesRead: number, finishedAts: number[], createdAt: number }} Book
@@ -154,11 +159,63 @@ export async function removeBookRemote(bookId) {
 }
 
 /**
+ * @param {unknown} err
+ */
+function isFinishedAtsRejected(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return (
+    /finishedAts/i.test(message) &&
+    /extra field|not in the validator|ArgumentValidationError/i.test(message)
+  );
+}
+
+function readFinishedAtsSupport() {
+  try {
+    const version = localStorage.getItem(FINISHED_ATS_SUPPORT_VERSION_KEY);
+    if (version !== FINISHED_ATS_SUPPORT_VERSION) {
+      localStorage.removeItem(FINISHED_ATS_SUPPORT_KEY);
+      localStorage.setItem(
+        FINISHED_ATS_SUPPORT_VERSION_KEY,
+        FINISHED_ATS_SUPPORT_VERSION
+      );
+      return null;
+    }
+    const flag = localStorage.getItem(FINISHED_ATS_SUPPORT_KEY);
+    if (flag === "1") return true;
+    if (flag === "0") return false;
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+/** @param {boolean} supported */
+function writeFinishedAtsSupport(supported) {
+  try {
+    localStorage.setItem(FINISHED_ATS_SUPPORT_KEY, supported ? "1" : "0");
+    localStorage.setItem(
+      FINISHED_ATS_SUPPORT_VERSION_KEY,
+      FINISHED_ATS_SUPPORT_VERSION
+    );
+  } catch {
+    // ignore
+  }
+}
+
+/**
  * @param {{ title: string, author: string, timesRead?: number, finishedAts?: number[] }[]} rows
  * @returns {Promise<{ added: number, updated: number, dated: number, datesStored: "convex" | "local" | "none" }>}
  */
 export async function importBooksRemote(rows) {
   const dated = rows.filter((r) => (r.finishedAts?.length ?? 0) > 0).length;
+  // Always keep finish dates locally so Stats works even when Convex is behind.
+  if (dated > 0) cacheFinishedAtsLocally(rows);
+
+  const withoutDates = rows.map((row) => ({
+    title: row.title,
+    author: row.author,
+    timesRead: row.timesRead,
+  }));
   const withDates = rows.map((row) => ({
     title: row.title,
     author: row.author,
@@ -167,18 +224,17 @@ export async function importBooksRemote(rows) {
       ? { finishedAts: row.finishedAts }
       : {}),
   }));
-  const withoutDates = rows.map((row) => ({
-    title: row.title,
-    author: row.author,
-    timesRead: row.timesRead,
-  }));
 
-  try {
-    const result = await convexMutation("books:importMany", {
-      books: withDates,
-    });
-    // Server accepted finish dates — drop local overrides for these titles.
-    if (dated > 0) {
+  const knownSupport = readFinishedAtsSupport();
+  const tryWithDates = dated > 0 && knownSupport !== false;
+
+  if (tryWithDates) {
+    try {
+      const result = await convexMutation("books:importMany", {
+        books: withDates,
+      });
+      writeFinishedAtsSupport(true);
+      // Server has the dates — drop local overrides for these titles.
       const cache = readFinishedAtsCache();
       let changed = false;
       for (const row of rows) {
@@ -189,33 +245,28 @@ export async function importBooksRemote(rows) {
         }
       }
       if (changed) writeFinishedAtsCache(cache);
+      return {
+        added: result?.added ?? 0,
+        updated: result?.updated ?? 0,
+        dated,
+        datesStored: "convex",
+      };
+    } catch (err) {
+      if (!isFinishedAtsRejected(err)) throw err;
+      writeFinishedAtsSupport(false);
+      // Fall through to import without finishedAts.
     }
-    return {
-      added: result?.added ?? 0,
-      updated: result?.updated ?? 0,
-      dated,
-      datesStored: dated > 0 ? "convex" : "none",
-    };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const backendMissingDates =
-      /extra field `finishedAts`|finishedAts.*not in the validator/i.test(
-        message
-      );
-    if (!backendMissingDates) throw err;
-
-    // Production Convex not redeployed yet — import titles, keep dates locally.
-    cacheFinishedAtsLocally(rows);
-    const result = await convexMutation("books:importMany", {
-      books: withoutDates,
-    });
-    return {
-      added: result?.added ?? 0,
-      updated: result?.updated ?? 0,
-      dated,
-      datesStored: dated > 0 ? "local" : "none",
-    };
   }
+
+  const result = await convexMutation("books:importMany", {
+    books: withoutDates,
+  });
+  return {
+    added: result?.added ?? 0,
+    updated: result?.updated ?? 0,
+    dated,
+    datesStored: dated > 0 ? "local" : "none",
+  };
 }
 
 export async function clearLibraryRemote() {

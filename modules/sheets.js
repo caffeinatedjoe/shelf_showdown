@@ -4,7 +4,7 @@
  * without a backend or CORS proxy.
  */
 
-import { extractBooksFromMatrix } from "./tabular.js";
+import { extractBooksFromMatrix } from "./tabular.js?v=20260810b";
 
 /** @typedef {{ title: string, author: string, timesRead: number, finishedAts: number[] }} BookRow */
 
