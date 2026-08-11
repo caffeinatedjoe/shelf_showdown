@@ -87,6 +87,58 @@ body {
   animation: pattern-drift 22s linear infinite;
 }
 
+/* —— Pull to refresh (mobile locked viewport) —— */
+.pull-refresh {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  padding: 0.35rem 0.75rem;
+  pointer-events: none;
+  transform: translate(-50%, -110%);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  color: var(--teal-deep);
+}
+
+.pull-refresh.is-visible {
+  opacity: 1;
+}
+
+.pull-refresh.is-refreshing .pull-refresh-spinner {
+  animation: pull-spin 0.7s linear infinite;
+}
+
+.pull-refresh-spinner {
+  width: 1.35rem;
+  height: 1.35rem;
+  border: 2.5px solid var(--mint);
+  border-top-color: var(--teal-deep);
+  border-radius: 50%;
+  transform: rotate(0deg);
+}
+
+.pull-refresh-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .pull-refresh {
+    display: none;
+  }
+}
+
 /* —— Header / brand —— */
 .app-header {
   text-align: center;
@@ -1227,6 +1279,12 @@ body {
   }
   to {
     background-position: 4rem 4rem;
+  }
+}
+
+@keyframes pull-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

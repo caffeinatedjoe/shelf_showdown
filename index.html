@@ -7,11 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20260810j" />
+  <link rel="stylesheet" href="style.css?v=20260811a" />
 </head>
 <body>
   <div id="app">
     <div class="app-pattern" aria-hidden="true"></div>
+    <div id="pull-refresh" class="pull-refresh" hidden aria-hidden="true">
+      <div class="pull-refresh-spinner" aria-hidden="true"></div>
+      <span id="pull-refresh-label" class="pull-refresh-label">Pull to refresh</span>
+    </div>
 
     <header class="app-header">
       <p class="brand-logo" aria-label="Shelf Showdown">
@@ -219,6 +223,6 @@
     </div>
   </div>
 
-  <script type="module" src="app.js?v=20260810j"></script>
+  <script type="module" src="app.js?v=20260811a"></script>
 </body>
 </html>
