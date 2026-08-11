@@ -339,7 +339,8 @@ body {
   gap: 0.45rem;
   overflow: hidden;
   position: relative;
-  touch-action: pan-y;
+  /* JS owns swipe / drag / pull on Showdown — native pan fights those gestures. */
+  touch-action: none;
 }
 
 #compare-active.is-swiping-left,
@@ -813,7 +814,7 @@ body {
   box-shadow: 0 16px 32px rgba(28, 25, 21, 0.22);
   transform: scale(1.02);
   animation: none;
-  pointer-events: none;
+  /* Keep pointer events so setPointerCapture keeps receiving moves (Safari). */
 }
 
 .handful-placeholder {
@@ -837,6 +838,8 @@ body {
   touch-action: none;
   width: 2.65rem;
   align-self: stretch;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .handful-rank {
@@ -1314,6 +1317,10 @@ body {
   /* Wider / pointer layouts: Skip / Undo buttons; swipe is for the app */
   .handful-actions {
     display: flex;
+  }
+
+  #compare-active {
+    touch-action: auto;
   }
 
   .prompt-touch {

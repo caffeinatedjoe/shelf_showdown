@@ -84,6 +84,7 @@ let swipeToastTimer = 0;
  *   pullPx: number,
  *   armed: boolean,
  *   scrollEl: HTMLElement | null,
+ *   priorOverflowY: string | null,
  * } | null} */
 let pullGesture = null;
 
@@ -371,10 +372,10 @@ function renderHandfulList() {
     li.dataset.id = book.id;
     if (index === 0) li.classList.add("is-first");
 
-    const handle = document.createElement("button");
-    handle.type = "button";
+    const handle = document.createElement("div");
     handle.className = "handful-handle";
-    handle.setAttribute("aria-label", `Drag to reorder ${book.title}`);
+    handle.setAttribute("role", "img");
+    handle.setAttribute("aria-label", `Rank ${index + 1}, drag to reorder`);
     const rank = document.createElement("span");
     rank.className = "handful-rank";
     rank.textContent = String(index + 1);
@@ -1070,13 +1071,30 @@ function activeScrollEl() {
 }
 
 /**
+ * True for controls that should not start pull-to-refresh.
+ * Book rows own vertical drag / horizontal swipe instead.
  * @param {EventTarget | null} target
  * @returns {boolean}
  */
 function isPullBlockedTarget(target) {
   if (!(target instanceof Element)) return true;
   return Boolean(
-    target.closest("button, a, input, textarea, select, label, .handful-item")
+    target.closest(
+      "button, a, input, textarea, select, label, .handful-item, .handful-list"
+    )
+  );
+}
+
+/**
+ * True for controls that should not start Showdown swipe/drag.
+ * Rank handles are plain divs (not buttons) so they remain eligible.
+ * @param {EventTarget | null} target
+ * @returns {boolean}
+ */
+function isGestureBlockedTarget(target) {
+  if (!(target instanceof Element)) return true;
+  return Boolean(
+    target.closest("button, a, input, textarea, select, label")
   );
 }
 
@@ -1114,7 +1132,16 @@ function updatePullIndicator(pullPx, refreshing = false) {
   }
 }
 
+function unlockPullScroll() {
+  if (!pullGesture?.scrollEl) return;
+  const el = pullGesture.scrollEl;
+  if (pullGesture.priorOverflowY != null) {
+    el.style.overflowY = pullGesture.priorOverflowY;
+  }
+}
+
 function resetPullGesture() {
+  unlockPullScroll();
   pullGesture = null;
   if (!pullRefreshing) updatePullIndicator(0);
 }
@@ -1123,8 +1150,8 @@ function resetPullGesture() {
 function cancelPointerGesture() {
   if (!pointerGesture) return;
   detachGestureListeners();
-  pointerGesture = null;
   clearSwipeClass();
+  pointerGesture = null;
 }
 
 async function runPullRefresh() {
@@ -1171,13 +1198,18 @@ function onPullPointerMove(event) {
   const dy = event.clientY - pullGesture.startY;
 
   if (!pullGesture.armed) {
-    if (Math.abs(dx) < PULL_INTENT_PX && Math.abs(dy) < PULL_INTENT_PX) return;
+    if (Math.abs(dx) < PULL_INTENT_PX && Math.abs(dy) < PULL_INTENT_PX) {
+      /* Hold the scroll container still until we know intent (down = pull). */
+      if (dy > 0 && pullGesture.scrollEl && event.cancelable) {
+        event.preventDefault();
+      }
+      return;
+    }
 
     /* Horizontal or upward motion — abandon pull (swipe / scroll can proceed). */
     if (dy <= Math.abs(dx) * GESTURE_ANGLE_RATIO) {
       resetPullGesture();
       detachPullListeners();
-      updatePullIndicator(0);
       return;
     }
 
@@ -1185,6 +1217,12 @@ function onPullPointerMove(event) {
       resetPullGesture();
       detachPullListeners();
       return;
+    }
+
+    /* Lock scroll so the list can't steal the gesture before we arm. */
+    if (pullGesture.scrollEl && pullGesture.priorOverflowY == null) {
+      pullGesture.priorOverflowY = pullGesture.scrollEl.style.overflowY;
+      pullGesture.scrollEl.style.overflowY = "hidden";
     }
 
     /* Vertical pull wins over pending Showdown swipe tracking. */
@@ -1195,7 +1233,6 @@ function onPullPointerMove(event) {
   if (pullGesture.scrollEl && pullGesture.scrollEl.scrollTop > 0) {
     resetPullGesture();
     detachPullListeners();
-    updatePullIndicator(0);
     return;
   }
 
@@ -1203,9 +1240,7 @@ function onPullPointerMove(event) {
   const resisted = Math.min(PULL_MAX_PX, raw * 0.55);
   pullGesture.pullPx = resisted;
 
-  if (resisted > 0 && event.cancelable) {
-    event.preventDefault();
-  }
+  if (event.cancelable) event.preventDefault();
   updatePullIndicator(resisted);
 }
 
@@ -1215,6 +1250,7 @@ function onPullPointerMove(event) {
 function onPullPointerUp(event) {
   if (!pullGesture || event.pointerId !== pullGesture.pointerId) return;
   const shouldRefresh = pullGesture.armed && pullGesture.pullPx >= PULL_ACTIVATE_PX;
+  unlockPullScroll();
   detachPullListeners();
   pullGesture = null;
 
@@ -1243,6 +1279,7 @@ els.appRoot?.addEventListener(
       pullPx: 0,
       armed: false,
       scrollEl,
+      priorOverflowY: null,
     };
 
     document.addEventListener("pointermove", onPullPointerMove, { passive: false });
@@ -1271,7 +1308,10 @@ function skipCurrentBook() {
   if (!canSkipBook() || !sortSession) return false;
   const target = sortSession.handful[sortSession.handful.length - 1];
   if (!target) return false;
+  const before = sortSession.handful.join("|");
   sortSession = skipHandfulBook(sortSession, target);
+  const after = sortSession.handful.join("|");
+  if (before === after) return false;
   saveHandfulSession(sortSession);
   renderCompare();
   return true;
@@ -1338,7 +1378,13 @@ function updateSwipeClass(dx, dy) {
   if (Math.abs(dx) < GESTURE_INTENT_PX || Math.abs(dx) < Math.abs(dy) * GESTURE_ANGLE_RATIO) {
     return;
   }
-  els.compareActive?.classList.add(dx < 0 ? "is-swiping-left" : "is-swiping-right");
+  if (dx < 0) {
+    if (!canUndoHandful()) return;
+    els.compareActive?.classList.add("is-swiping-left");
+    return;
+  }
+  if (!canSkipBook()) return;
+  els.compareActive?.classList.add("is-swiping-right");
 }
 
 els.skipBtn.addEventListener("click", () => {
@@ -1370,6 +1416,7 @@ function movePlaceholderTo(clientY) {
 
 function onHandfulPointerMove(event) {
   if (!drag || event.pointerId !== drag.pointerId || !els.handfulList) return;
+  if (event.cancelable) event.preventDefault();
   const listRect = els.handfulList.getBoundingClientRect();
   const y = event.clientY - listRect.top - drag.grabOffsetY;
   const maxY = Math.max(0, listRect.height - drag.height);
@@ -1390,7 +1437,11 @@ function endHandfulDrag(event) {
   item.style.left = "";
   item.style.width = "";
   item.style.height = "";
-  item.releasePointerCapture?.(pointerId);
+  try {
+    item.releasePointerCapture(pointerId);
+  } catch {
+    /* already released */
+  }
 
   document.removeEventListener("pointermove", onHandfulPointerMove);
   document.removeEventListener("pointerup", endHandfulDrag);
@@ -1409,7 +1460,7 @@ function endHandfulDrag(event) {
 function startHandfulDrag(event, item, grabClientY = event.clientY) {
   if (!els.handfulList || busy) return;
   if (event.button != null && event.button !== 0) return;
-  event.preventDefault();
+  if (event.cancelable) event.preventDefault();
 
   const rect = item.getBoundingClientRect();
   const listRect = els.handfulList.getBoundingClientRect();
@@ -1433,9 +1484,13 @@ function startHandfulDrag(event, item, grabClientY = event.clientY) {
   item.style.top = `${rect.top - listRect.top}px`;
   item.classList.add("is-dragging");
   els.handfulList.classList.add("is-reordering");
-  item.setPointerCapture?.(event.pointerId);
+  try {
+    item.setPointerCapture(event.pointerId);
+  } catch {
+    /* Pointer may already be released (or synthetic); document listeners still work. */
+  }
 
-  document.addEventListener("pointermove", onHandfulPointerMove);
+  document.addEventListener("pointermove", onHandfulPointerMove, { passive: false });
   document.addEventListener("pointerup", endHandfulDrag);
   document.addEventListener("pointercancel", endHandfulDrag);
 }
@@ -1463,6 +1518,12 @@ function onGesturePointerMove(event) {
       resetPullGesture();
       detachPullListeners();
       pointerGesture.mode = "swipe";
+      try {
+        els.compareActive?.setPointerCapture(event.pointerId);
+      } catch {
+        /* ignore — document listeners still receive moves */
+      }
+      if (event.cancelable) event.preventDefault();
       updateSwipeClass(dx, dy);
       return;
     }
@@ -1485,6 +1546,7 @@ function onGesturePointerMove(event) {
   }
 
   if (pointerGesture.mode === "swipe") {
+    if (event.cancelable) event.preventDefault();
     updateSwipeClass(dx, dy);
   }
 }
@@ -1502,6 +1564,11 @@ function onGesturePointerUp(event) {
   const dy = gesture.lastY - gesture.startY;
   const mode = gesture.mode;
 
+  try {
+    els.compareActive?.releasePointerCapture?.(event.pointerId);
+  } catch {
+    /* capture may already be released */
+  }
   detachGestureListeners();
   pointerGesture = null;
   clearSwipeClass();
@@ -1512,27 +1579,22 @@ function onGesturePointerUp(event) {
   }
 
   if (dx < 0) {
+    if (!canUndoHandful()) {
+      showSwipeToast("left", "Nothing to undo");
+      return;
+    }
     void (async () => {
       const ok = await undoLastHandful();
-      if (ok) showSwipeToast("left");
+      showSwipeToast("left", ok ? "Undo" : "Couldn't undo");
     })();
     return;
   }
 
-  if (skipCurrentBook()) showSwipeToast("right");
-}
-
-/**
- * True for controls that should not start Showdown swipe/drag.
- * The rank column is a <button class="handful-handle"> and is the primary
- * drag affordance — it must remain eligible.
- * @param {EventTarget | null} target
- */
-function isGestureBlockedTarget(target) {
-  if (!(target instanceof Element)) return true;
-  const interactive = target.closest("button, a, input, textarea, select, label");
-  if (!interactive) return false;
-  return !interactive.classList.contains("handful-handle");
+  if (!canSkipBook()) {
+    showSwipeToast("right", "Can't skip");
+    return;
+  }
+  showSwipeToast("right", skipCurrentBook() ? "Skip" : "Can't skip");
 }
 
 els.compareActive?.addEventListener("pointerdown", (event) => {
@@ -1562,7 +1624,7 @@ els.compareActive?.addEventListener("pointerdown", (event) => {
     item,
   };
 
-  document.addEventListener("pointermove", onGesturePointerMove);
+  document.addEventListener("pointermove", onGesturePointerMove, { passive: false });
   document.addEventListener("pointerup", onGesturePointerUp);
   document.addEventListener("pointercancel", onGesturePointerUp);
 });
