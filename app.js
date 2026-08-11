@@ -58,6 +58,11 @@ const SWIPE_THRESHOLD = 40;
 const GESTURE_ANGLE_RATIO = 1.05;
 const GESTURE_INTENT_PX = 12;
 
+/** Pull-to-refresh (replaces native browser PTR blocked by locked viewport). */
+const PULL_INTENT_PX = 10;
+const PULL_ACTIVATE_PX = 64;
+const PULL_MAX_PX = 108;
+
 /** @type {{
  *   mode: "pending" | "swipe" | "ignore",
  *   pointerId: number,
@@ -71,6 +76,19 @@ let pointerGesture = null;
 
 /** @type {number} */
 let swipeToastTimer = 0;
+
+/** @type {{
+ *   pointerId: number,
+ *   startX: number,
+ *   startY: number,
+ *   pullPx: number,
+ *   armed: boolean,
+ *   scrollEl: HTMLElement | null,
+ * } | null} */
+let pullGesture = null;
+
+/** @type {boolean} */
+let pullRefreshing = false;
 
 const els = {
   tabs: document.querySelectorAll(".tab"),
@@ -131,6 +149,9 @@ const els = {
   compareProgressCount: document.getElementById("compare-progress-count"),
   rankingsList: document.getElementById("rankings-list"),
   rankingsEmpty: document.getElementById("rankings-empty"),
+  pullRefresh: document.getElementById("pull-refresh"),
+  pullRefreshLabel: document.getElementById("pull-refresh-label"),
+  appRoot: document.getElementById("app"),
 };
 
 async function refreshState() {
@@ -1015,6 +1036,222 @@ function isDesktopLayout() {
   return window.matchMedia("(min-width: 640px)").matches;
 }
 
+/**
+ * Active tab panel, if any.
+ * @returns {HTMLElement | null}
+ */
+function activeViewEl() {
+  for (const view of Object.values(els.views)) {
+    if (view && !view.hidden) return view;
+  }
+  return null;
+}
+
+/**
+ * @returns {ViewName | null}
+ */
+function activeViewName() {
+  for (const [key, view] of Object.entries(els.views)) {
+    if (view && !view.hidden) return /** @type {ViewName} */ (key);
+  }
+  return null;
+}
+
+/**
+ * Scroll container for the active panel (or null when the view doesn't scroll).
+ * @returns {HTMLElement | null}
+ */
+function activeScrollEl() {
+  const view = activeViewEl();
+  if (!view) return null;
+  const style = window.getComputedStyle(view);
+  if (style.overflowY === "auto" || style.overflowY === "scroll") return view;
+  return null;
+}
+
+/**
+ * @param {EventTarget | null} target
+ * @returns {boolean}
+ */
+function isPullBlockedTarget(target) {
+  if (!(target instanceof Element)) return true;
+  return Boolean(
+    target.closest("button, a, input, textarea, select, label, .handful-item")
+  );
+}
+
+/**
+ * @param {number} pullPx
+ * @param {boolean} [refreshing]
+ */
+function updatePullIndicator(pullPx, refreshing = false) {
+  const el = els.pullRefresh;
+  const label = els.pullRefreshLabel;
+  if (!el) return;
+
+  if (pullPx <= 0 && !refreshing) {
+    el.hidden = true;
+    el.classList.remove("is-visible", "is-refreshing");
+    el.style.transform = "translate(-50%, -110%)";
+    el.setAttribute("aria-hidden", "true");
+    if (label) label.textContent = "Pull to refresh";
+    return;
+  }
+
+  const clamped = Math.min(PULL_MAX_PX, Math.max(0, pullPx));
+  const reveal = refreshing ? PULL_ACTIVATE_PX : clamped;
+  el.hidden = false;
+  el.classList.add("is-visible");
+  el.classList.toggle("is-refreshing", refreshing);
+  el.style.transform = `translate(-50%, ${Math.max(0, reveal - 44)}px)`;
+  el.setAttribute("aria-hidden", "false");
+  if (label) {
+    label.textContent = refreshing
+      ? "Refreshing…"
+      : clamped >= PULL_ACTIVATE_PX
+        ? "Release to refresh"
+        : "Pull to refresh";
+  }
+}
+
+function resetPullGesture() {
+  pullGesture = null;
+  if (!pullRefreshing) updatePullIndicator(0);
+}
+
+/** Cancel an in-progress Showdown swipe so pull-to-refresh can take over. */
+function cancelPointerGesture() {
+  if (!pointerGesture) return;
+  detachGestureListeners();
+  pointerGesture = null;
+  clearSwipeClass();
+}
+
+async function runPullRefresh() {
+  if (pullRefreshing) return;
+  pullRefreshing = true;
+  updatePullIndicator(PULL_ACTIVATE_PX, true);
+
+  try {
+    if (!els.appShell || els.appShell.hidden) {
+      window.location.reload();
+      return;
+    }
+    await refreshState();
+    const view = activeViewName();
+    if (view) showView(view);
+    else enterApp();
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Could not refresh.";
+    if (els.libraryStatus && els.views.library && !els.views.library.hidden) {
+      els.libraryStatus.textContent = message;
+    } else if (els.compareProgress) {
+      els.compareProgress.textContent = message;
+    }
+  } finally {
+    pullRefreshing = false;
+    updatePullIndicator(0);
+  }
+}
+
+function detachPullListeners() {
+  document.removeEventListener("pointermove", onPullPointerMove);
+  document.removeEventListener("pointerup", onPullPointerUp);
+  document.removeEventListener("pointercancel", onPullPointerUp);
+}
+
+/**
+ * @param {PointerEvent} event
+ */
+function onPullPointerMove(event) {
+  if (!pullGesture || event.pointerId !== pullGesture.pointerId) return;
+
+  const dx = event.clientX - pullGesture.startX;
+  const dy = event.clientY - pullGesture.startY;
+
+  if (!pullGesture.armed) {
+    if (Math.abs(dx) < PULL_INTENT_PX && Math.abs(dy) < PULL_INTENT_PX) return;
+
+    /* Horizontal or upward motion — abandon pull (swipe / scroll can proceed). */
+    if (dy <= Math.abs(dx) * GESTURE_ANGLE_RATIO) {
+      resetPullGesture();
+      detachPullListeners();
+      updatePullIndicator(0);
+      return;
+    }
+
+    if (pullGesture.scrollEl && pullGesture.scrollEl.scrollTop > 0) {
+      resetPullGesture();
+      detachPullListeners();
+      return;
+    }
+
+    /* Vertical pull wins over pending Showdown swipe tracking. */
+    cancelPointerGesture();
+    pullGesture.armed = true;
+  }
+
+  if (pullGesture.scrollEl && pullGesture.scrollEl.scrollTop > 0) {
+    resetPullGesture();
+    detachPullListeners();
+    updatePullIndicator(0);
+    return;
+  }
+
+  const raw = Math.max(0, dy);
+  const resisted = Math.min(PULL_MAX_PX, raw * 0.55);
+  pullGesture.pullPx = resisted;
+
+  if (resisted > 0 && event.cancelable) {
+    event.preventDefault();
+  }
+  updatePullIndicator(resisted);
+}
+
+/**
+ * @param {PointerEvent} event
+ */
+function onPullPointerUp(event) {
+  if (!pullGesture || event.pointerId !== pullGesture.pointerId) return;
+  const shouldRefresh = pullGesture.armed && pullGesture.pullPx >= PULL_ACTIVATE_PX;
+  detachPullListeners();
+  pullGesture = null;
+
+  if (shouldRefresh) {
+    void runPullRefresh();
+    return;
+  }
+  updatePullIndicator(0);
+}
+
+els.appRoot?.addEventListener(
+  "pointerdown",
+  (event) => {
+    if (isDesktopLayout() || pullRefreshing || busy || drag) return;
+    if (event.pointerType === "mouse") return;
+    if (event.button != null && event.button !== 0) return;
+    if (isPullBlockedTarget(event.target)) return;
+
+    const scrollEl = activeScrollEl();
+    if (scrollEl && scrollEl.scrollTop > 0) return;
+
+    pullGesture = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      pullPx: 0,
+      armed: false,
+      scrollEl,
+    };
+
+    document.addEventListener("pointermove", onPullPointerMove, { passive: false });
+    document.addEventListener("pointerup", onPullPointerUp);
+    document.addEventListener("pointercancel", onPullPointerUp);
+  },
+  true
+);
+
 function canSkipBook() {
   return Boolean(
     !busy &&
@@ -1222,6 +1459,9 @@ function onGesturePointerMove(event) {
     }
 
     if (Math.abs(dx) > Math.abs(dy) * GESTURE_ANGLE_RATIO) {
+      /* Horizontal swipe wins — drop any pending pull tracking. */
+      resetPullGesture();
+      detachPullListeners();
       pointerGesture.mode = "swipe";
       updateSwipeClass(dx, dy);
       return;
@@ -1230,6 +1470,8 @@ function onGesturePointerMove(event) {
     if (pointerGesture.item) {
       const item = pointerGesture.item;
       const grabY = pointerGesture.startY;
+      resetPullGesture();
+      detachPullListeners();
       detachGestureListeners();
       pointerGesture = null;
       clearSwipeClass();
