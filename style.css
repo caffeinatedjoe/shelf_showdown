@@ -1,5 +1,5 @@
 :root {
-  /* Mid-century modern: stone, walnut copper, espresso */
+  /* Geometric mid-century modern: stone, walnut copper, espresso */
   --bg: #e3dfd6;
   --bg-soft: #d5cfc3;
   --card: #f0ece4;
@@ -13,11 +13,11 @@
   --track: #cfc8bb;
   --danger: #9e3d35;
   --line: rgba(28, 25, 21, 0.12);
-  --shadow: 0 8px 18px rgba(28, 25, 21, 0.12);
-  --shadow-soft: 0 3px 10px rgba(28, 25, 21, 0.08);
-  --radius: 0.55rem;
-  --radius-sm: 0.4rem;
-  --font-ui: "Archivo", "Segoe UI", sans-serif;
+  --shadow: 0 6px 14px rgba(28, 25, 21, 0.1);
+  --shadow-soft: 0 2px 8px rgba(28, 25, 21, 0.07);
+  --radius: 0.35rem;
+  --radius-sm: 0.2rem;
+  --font-ui: "Jost", "Segoe UI", sans-serif;
   --nav-h: 4.25rem;
   --cover-ratio: 2 / 3;
 }
@@ -47,6 +47,7 @@ body {
   font-family: var(--font-ui);
   font-size: 1rem;
   font-weight: 500;
+  letter-spacing: 0.01em;
   line-height: 1.5;
   color: var(--ink);
   background:
@@ -161,9 +162,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  font-weight: 800;
+  font-weight: 700;
   font-size: clamp(1.55rem, 6vw, 1.85rem);
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1;
 }
@@ -369,8 +370,8 @@ body {
 .round-label {
   margin: 0;
   font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--ink);
 }
@@ -378,8 +379,8 @@ body {
 .view-title {
   margin: 0;
   font-size: clamp(1.35rem, 4.5vw, 1.65rem);
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink);
   text-align: center;
@@ -401,8 +402,8 @@ body {
 }
 
 .progress-track {
-  height: 0.5rem;
-  border-radius: 999px;
+  height: 0.4rem;
+  border-radius: var(--radius-sm);
   background: var(--track);
   overflow: hidden;
 }
@@ -496,8 +497,8 @@ body {
 .btn {
   font-family: var(--font-ui);
   font-size: 0.92rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   border: none;
   cursor: pointer;
@@ -524,7 +525,7 @@ body {
 .btn-raised {
   color: #fff;
   background: var(--teal);
-  box-shadow: 0 8px 18px rgba(140, 79, 46, 0.32);
+  box-shadow: 0 4px 12px rgba(140, 79, 46, 0.28);
 }
 
 .btn-raised:hover:not(:disabled) {
@@ -533,11 +534,11 @@ body {
 
 .btn-pill {
   width: 100%;
-  border-radius: 0.65rem;
+  border-radius: var(--radius);
   min-height: 2.75rem;
   font-size: 0.95rem;
   letter-spacing: 0.08em;
-  box-shadow: 0 6px 14px rgba(140, 79, 46, 0.28);
+  box-shadow: 0 4px 10px rgba(140, 79, 46, 0.24);
 }
 
 .btn-flat {
@@ -1196,7 +1197,7 @@ body {
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  border-radius: 0.65rem;
+  border-radius: var(--radius);
   transition: color 0.15s ease, background 0.15s ease;
 }
 
@@ -1797,7 +1798,7 @@ body {
   .handful-placeholder {
     min-height: 2.35rem;
     max-height: 3.25rem;
-    border-radius: 0.65rem;
+    border-radius: var(--radius-sm);
   }
 
   .handful-handle {
