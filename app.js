@@ -1522,10 +1522,23 @@ function onGesturePointerUp(event) {
   if (skipCurrentBook()) showSwipeToast("right");
 }
 
+/**
+ * True for controls that should not start Showdown swipe/drag.
+ * The rank column is a <button class="handful-handle"> and is the primary
+ * drag affordance — it must remain eligible.
+ * @param {EventTarget | null} target
+ */
+function isGestureBlockedTarget(target) {
+  if (!(target instanceof Element)) return true;
+  const interactive = target.closest("button, a, input, textarea, select, label");
+  if (!interactive) return false;
+  return !interactive.classList.contains("handful-handle");
+}
+
 els.compareActive?.addEventListener("pointerdown", (event) => {
   if (!els.compareActive || els.compareActive.hidden || busy || drag) return;
   if (event.button != null && event.button !== 0) return;
-  if (event.target.closest("button, a, input, textarea, select, label")) return;
+  if (isGestureBlockedTarget(event.target)) return;
 
   const itemEl = event.target.closest(".handful-item");
   const item =
