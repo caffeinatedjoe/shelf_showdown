@@ -29,6 +29,7 @@ import {
   passwordAuth,
   signOut,
 } from "./modules/auth.js?v=20260810d";
+import { createCoverElement } from "./modules/covers.js?v=20260912a";
 
 /** @typedef {import("./modules/storage.js").AppState} AppState */
 /** @typedef {import("./modules/storage.js").Book} Book */
@@ -236,9 +237,7 @@ function renderLibrary() {
 
   for (const book of books) {
     const li = document.createElement("li");
-    const accent = document.createElement("div");
-    accent.className = "list-accent";
-    accent.setAttribute("aria-hidden", "true");
+    const cover = createCoverElement(book, { extraClass: "list-cover" });
 
     const meta = document.createElement("div");
     meta.className = "book-meta";
@@ -253,7 +252,7 @@ function renderLibrary() {
     remove.textContent = "×";
     remove.addEventListener("click", () => void removeBook(book.id));
 
-    li.append(accent, meta, remove);
+    li.append(cover, meta, remove);
     els.bookList.append(li);
   }
 
@@ -380,9 +379,7 @@ function renderHandfulList() {
     rank.textContent = String(index + 1);
     handle.append(rank);
 
-    const cover = document.createElement("div");
-    cover.className = `handful-cover handful-cover-tone-${index % 5}`;
-    cover.setAttribute("aria-hidden", "true");
+    const cover = createCoverElement(book);
 
     const meta = document.createElement("div");
     meta.className = "book-meta";
@@ -452,6 +449,8 @@ function renderRankings() {
     badge.className = "rank-badge";
     badge.setAttribute("aria-hidden", "true");
 
+    const cover = createCoverElement(book, { extraClass: "list-cover" });
+
     const meta = document.createElement("div");
     meta.className = "book-meta";
     meta.innerHTML = `<strong></strong><span></span>`;
@@ -468,7 +467,7 @@ function renderRankings() {
       score.title = "Shelf position";
     }
 
-    li.append(badge, meta, score);
+    li.append(badge, cover, meta, score);
     els.rankingsList.append(li);
   }
 }
@@ -785,6 +784,7 @@ function renderRereadsList(rereads) {
     const badge = document.createElement("div");
     badge.className = "rank-badge";
     badge.setAttribute("aria-hidden", "true");
+    const cover = createCoverElement(book, { extraClass: "list-cover" });
     const meta = document.createElement("div");
     meta.className = "book-meta";
     meta.innerHTML = `<strong></strong><span></span>`;
@@ -794,7 +794,7 @@ function renderRereadsList(rereads) {
     score.className = "rank-score";
     score.textContent = String(book.timesRead ?? 1);
     score.title = "Times read";
-    li.append(badge, meta, score);
+    li.append(badge, cover, meta, score);
     els.rereadsList.append(li);
   }
 }
