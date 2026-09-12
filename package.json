@@ -8,7 +8,8 @@
     "dev": "npx convex dev --start 'npx serve .'",
     "serve": "npx serve .",
     "convex:dev": "npx convex dev",
-    "test": "SHELF_SHOWDOWN_TEST=1 node --test modules/comparisons.test.js modules/handful.test.js modules/tabular.test.js",
+    "test": "SHELF_SHOWDOWN_TEST=1 node --test modules/comparisons.test.js modules/handful.test.js modules/tabular.test.js modules/covers.test.js",
+    "covers:index": "node scripts/generate-cover-files.mjs",
     "lint": "echo \"no lint configured\""
   },
   "dependencies": {

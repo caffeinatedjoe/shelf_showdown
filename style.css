@@ -879,6 +879,23 @@ body {
 .handful-cover-tone-3 { background: linear-gradient(160deg, #e0d0a8, #b8954a); }
 .handful-cover-tone-4 { background: linear-gradient(160deg, #d8c0b0, #8b4a3a); }
 
+.handful-cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.list-cover {
+  width: 2.4rem;
+  align-self: stretch;
+  aspect-ratio: auto;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .handful-item .book-meta {
   padding: 0.45rem 0.7rem 0.45rem 0.35rem;
 }
@@ -1711,6 +1728,10 @@ body {
 
   .handful-cover {
     width: clamp(2.6rem, 7vh, 3.5rem);
+  }
+
+  .list-cover {
+    width: 2.85rem;
   }
 
   .handful-item,

@@ -24,7 +24,17 @@ GitHub Pages only serves the static frontend — Convex does not update automati
 
 Hosted on GitHub Pages: [joecoffey.me/shelf_showdown](https://joecoffey.me/shelf_showdown/)
 
-The static frontend (`index.html`, `app.js`, `style.css`, `modules/`) is served from the `main` branch root. Backend stays on Convex.
+The static frontend (`index.html`, `app.js`, `style.css`, `modules/`, `covers/`) is served from the `main` branch root. Backend stays on Convex.
+
+## Book covers
+
+Jacket JPEGs live in [`covers/`](covers/), named `Title -- Author.jpg` (for example `Recursion -- Blake Crouch.jpg`). The UI matches each book’s title and author to those files, ignoring case, punctuation, initials punctuation, and leading articles (`the` / `a` / `an`). Books without a file keep the existing colored placeholder.
+
+GitHub Pages serves them as static assets from `covers/` next to `index.html` — paths are site-root relative (`covers/…`), not `/covers/…`. After adding new JPEGs, refresh the filename index:
+
+```bash
+npm run covers:index
+```
 
 ## Design ideas
 
